@@ -3,6 +3,7 @@ pub mod common;
 pub mod server;
 pub mod transfer;
 pub mod worker;
+pub mod streamer;
 
 pub type Map<K, V> = hashbrown::HashMap<K, V>;
 pub type Set<T> = hashbrown::HashSet<T>;

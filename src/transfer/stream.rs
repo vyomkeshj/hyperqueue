@@ -4,20 +4,39 @@ use std::num::NonZeroU64;
 pub type StreamId = NonZeroU64;
 pub type ChannelId = u32;
 
-pub struct StartStreamMessage {
-    stream: StreamId,
+pub struct TaskStreamIdentification {
     job: JobId,
     task: JobTaskId,
+}
+
+pub struct StartTaskStreamMsg {
+    stream: StreamId,
+    ts_id: TaskStreamIdentification,
     channel_names: Vec<String>,
 }
 
-pub struct DataMessage {
+pub struct DataMsg {
+    stream: StreamId,
+    ts_id: TaskStreamIdentification,
     channel: ChannelId,
+    data: Vec<u8>,
+}
+
+pub struct EndTaskStreamMsg {
+    stream: StreamId,
+    ts_id: TaskStreamIdentification,
 }
 
 pub enum FromStreamerMessage {
-    StartStream(StartStreamRequest),
-    Data(),
+    Start(StartTaskStreamMsg),
+    Data(DataMsg),
+    End(EndTaskStreamMsg)
 }
 
-pub enum ToStreamerMessage {}
+pub struct EndTaskStreamResponseMsg {
+    ts_id: TaskStreamIdentification
+}
+
+pub enum ToStreamerMessage {
+    EndResponse(EndTaskStreamResponseMsg)
+}
