@@ -7,7 +7,7 @@ use tako::messages::gateway::{
 
 use crate::common::WrappedRcRefCell;
 use crate::server::job::Job;
-use crate::server::rpc::TakoServer;
+use crate::server::rpc::Backend;
 use crate::server::worker::Worker;
 use crate::transfer::messages::LostWorkerReasonInfo;
 use crate::{JobId, JobTaskCount, Map, TakoTaskId, WorkerId};
@@ -44,7 +44,7 @@ pub type StateRef = WrappedRcRefCell<State>;
 
 fn cancel_tasks_from_callback(
     state_ref: &StateRef,
-    tako_ref: &TakoServer,
+    tako_ref: &Backend,
     job_id: JobId,
     tasks: Vec<TakoTaskId>,
 ) {
@@ -55,7 +55,7 @@ fn cancel_tasks_from_callback(
     let state_ref = state_ref.clone();
     tokio::task::spawn_local(async move {
         let message = FromGatewayMessage::CancelTasks(CancelTasks { tasks });
-        let response = tako_ref.send_message(message).await.unwrap();
+        let response = tako_ref.send_tako_message(message).await.unwrap();
 
         match response {
             ToGatewayMessage::CancelTasksResponse(msg) => {
@@ -150,7 +150,7 @@ impl State {
     pub fn process_task_failed(
         &mut self,
         state_ref: &StateRef,
-        tako_ref: &TakoServer,
+        tako_ref: &Backend,
         msg: TaskFailedMessage,
     ) {
         log::debug!("Task id={} failed", msg.id);

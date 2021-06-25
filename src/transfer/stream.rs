@@ -1,42 +1,37 @@
 use crate::{JobId, JobTaskId};
 use std::num::NonZeroU64;
 
-pub type StreamId = NonZeroU64;
 pub type ChannelId = u32;
 
-pub struct TaskStreamIdentification {
+pub struct StartTaskStreamMsg {
     job: JobId,
     task: JobTaskId,
-}
-
-pub struct StartTaskStreamMsg {
-    stream: StreamId,
-    ts_id: TaskStreamIdentification,
     channel_names: Vec<String>,
 }
 
 pub struct DataMsg {
-    stream: StreamId,
-    ts_id: TaskStreamIdentification,
+    job: JobId,
+    task: JobTaskId,
     channel: ChannelId,
     data: Vec<u8>,
 }
 
 pub struct EndTaskStreamMsg {
-    stream: StreamId,
-    ts_id: TaskStreamIdentification,
+    job: JobId,
+    task: JobTaskId,
 }
 
 pub enum FromStreamerMessage {
     Start(StartTaskStreamMsg),
     Data(DataMsg),
-    End(EndTaskStreamMsg)
+    End(EndTaskStreamMsg),
 }
 
 pub struct EndTaskStreamResponseMsg {
-    ts_id: TaskStreamIdentification
+    job: JobId,
+    task: JobTaskId,
 }
 
 pub enum ToStreamerMessage {
-    EndResponse(EndTaskStreamResponseMsg)
+    EndResponse(EndTaskStreamResponseMsg),
 }

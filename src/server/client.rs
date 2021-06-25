@@ -12,7 +12,7 @@ use tokio::sync::Notify;
 
 use crate::common::env::{HQ_ENTRY, HQ_JOB_ID, HQ_SUBMIT_DIR, HQ_TASK_ID};
 use crate::server::job::Job;
-use crate::server::rpc::TakoServer;
+use crate::server::rpc::Backend;
 use crate::server::state::StateRef;
 use crate::transfer::connection::ServerConnection;
 use crate::transfer::messages::{
@@ -24,7 +24,7 @@ use bstr::BString;
 
 pub async fn handle_client_connections(
     state_ref: StateRef,
-    tako_ref: TakoServer,
+    tako_ref: Backend,
     listener: TcpListener,
     end_flag: Rc<Notify>,
     key: Arc<SecretKey>,
@@ -45,7 +45,7 @@ pub async fn handle_client_connections(
 async fn handle_client(
     socket: TcpStream,
     state_ref: StateRef,
-    tako_ref: TakoServer,
+    tako_ref: Backend,
     end_flag: Rc<Notify>,
     key: Arc<SecretKey>,
 ) -> crate::Result<()> {
@@ -65,7 +65,7 @@ pub async fn client_rpc_loop<
     mut tx: Tx,
     mut rx: Rx,
     state_ref: StateRef,
-    tako_ref: TakoServer,
+    tako_ref: Backend,
     end_flag: Rc<Notify>,
 ) {
     while let Some(message_result) = rx.next().await {
@@ -112,11 +112,11 @@ pub async fn client_rpc_loop<
 }
 
 async fn handle_worker_stop(
-    tako_ref: &TakoServer,
+    tako_ref: &Backend,
     worker_id: WorkerId,
 ) -> crate::Result<ToClientMessage> {
     match tako_ref
-        .send_message(FromGatewayMessage::StopWorker(StopWorkerRequest {
+        .send_tako_message(FromGatewayMessage::StopWorker(StopWorkerRequest {
             worker_id,
         }))
         .await?
@@ -159,7 +159,7 @@ fn compute_job_info(state_ref: &StateRef, selector: JobSelector) -> ToClientMess
 
 async fn handle_job_cancel(
     state_ref: &StateRef,
-    tako_ref: &TakoServer,
+    tako_ref: &Backend,
     job_id: JobId,
 ) -> ToClientMessage {
     let tako_task_ids;
@@ -181,7 +181,7 @@ async fn handle_job_cancel(
     }
 
     let canceled_tasks = match tako_ref
-        .send_message(FromGatewayMessage::CancelTasks(CancelTasks {
+        .send_tako_message(FromGatewayMessage::CancelTasks(CancelTasks {
             tasks: tako_task_ids,
         }))
         .await
@@ -228,7 +228,7 @@ fn make_program_def_for_task(
 
 async fn handle_submit(
     state_ref: &StateRef,
-    tako_ref: &TakoServer,
+    tako_ref: &Backend,
     message: SubmitRequest,
 ) -> ToClientMessage {
     if message.resources.validate().is_err() {
@@ -294,7 +294,7 @@ async fn handle_submit(
         (task_defs, job_detail)
     };
     match tako_ref
-        .send_message(FromGatewayMessage::NewTasks(NewTasksMessage {
+        .send_tako_message(FromGatewayMessage::NewTasks(NewTasksMessage {
             tasks: task_defs,
         }))
         .await

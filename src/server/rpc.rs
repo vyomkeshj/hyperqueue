@@ -12,32 +12,38 @@ use tokio::time::Duration;
 use crate::common::error::error;
 use crate::common::WrappedRcRefCell;
 use crate::server::state::StateRef;
+use crate::stream::control::StreamServerControlMessage;
+use crate::stream::server::start_stream_server;
+use tako::server::core::CustomConnectionHandler;
+use tako::server::rpc::ConnectionDescriptor;
 
 struct Inner {
-    sender: UnboundedSender<FromGatewayMessage>,
-    responses: VecDeque<oneshot::Sender<ToGatewayMessage>>,
+    tako_sender: UnboundedSender<FromGatewayMessage>,
+    tako_responses: VecDeque<oneshot::Sender<ToGatewayMessage>>,
+    stream_server_control: UnboundedSender<StreamServerControlMessage>,
+
     worker_port: u16,
 }
 
 #[derive(Clone)]
-pub struct TakoServer {
+pub struct Backend {
     inner: WrappedRcRefCell<Inner>,
 }
 
-impl TakoServer {
+impl Backend {
     pub fn worker_port(&self) -> u16 {
         self.inner.get().worker_port
     }
 
-    pub async fn send_message(
+    pub async fn send_tako_message(
         &self,
         message: FromGatewayMessage,
     ) -> crate::Result<ToGatewayMessage> {
         let (sx, rx) = oneshot::channel::<ToGatewayMessage>();
         {
             let mut inner = self.inner.get_mut();
-            inner.responses.push_back(sx);
-            inner.sender.send(message).unwrap();
+            inner.tako_responses.push_back(sx);
+            inner.tako_sender.send(message).unwrap();
         }
         Ok(rx.await.unwrap())
     }
@@ -46,11 +52,15 @@ impl TakoServer {
         state_ref: StateRef,
         key: Arc<SecretKey>,
         idle_timeout: Option<Duration>,
-    ) -> crate::Result<(TakoServer, impl Future<Output = crate::Result<()>>)> {
+    ) -> crate::Result<(Backend, impl Future<Output = crate::Result<()>>)> {
         let msd = Duration::from_millis(20);
 
         let (from_tako_sender, mut from_tako_receiver) = unbounded_channel::<ToGatewayMessage>();
         let (to_tako_sender, mut to_tako_receiver) = unbounded_channel::<FromGatewayMessage>();
+
+        let stream_server_control = start_stream_server();
+        let stream_server_control2 = stream_server_control.clone();
+
         let (core_ref, comm_ref, server_future) = tako::server::server_start(
             "0.0.0.0:0".parse().unwrap(),
             Some(key),
@@ -58,14 +68,20 @@ impl TakoServer {
             from_tako_sender.clone(),
             false,
             idle_timeout,
+            Some(Box::new(move |connection| {
+                assert!(stream_server_control2
+                    .send(StreamServerControlMessage::AddConnection(connection))
+                    .is_ok());
+            })),
         )
         .await?;
 
-        let server = TakoServer {
+        let server = Backend {
             inner: WrappedRcRefCell::wrap(Inner {
-                sender: to_tako_sender,
-                responses: Default::default(),
+                tako_sender: to_tako_sender,
+                tako_responses: Default::default(),
                 worker_port: core_ref.get().get_worker_listen_port(),
+                stream_server_control,
             }),
         };
         let server2 = server.clone();
@@ -89,7 +105,8 @@ impl TakoServer {
                             state_ref.get_mut().process_worker_lost(msg)
                         }
                         m => {
-                            let response = server2.inner.get_mut().responses.pop_front().unwrap();
+                            let response =
+                                server2.inner.get_mut().tako_responses.pop_front().unwrap();
                             response.send(m).unwrap();
                         }
                     }
@@ -128,13 +145,13 @@ mod tests {
     use tokio::net::TcpStream;
 
     use crate::common::fsutils::test_utils::run_concurrent;
-    use crate::server::rpc::TakoServer;
+    use crate::server::rpc::Backend;
     use crate::server::state::StateRef;
 
     #[tokio::test]
     async fn test_server_connect_worker() {
         let state = StateRef::new();
-        let (server, _fut) = TakoServer::start(state, Default::default(), None)
+        let (server, _fut) = Backend::start(state, Default::default(), None)
             .await
             .unwrap();
         TcpStream::connect(format!("127.0.0.1:{}", server.worker_port()))
@@ -145,12 +162,12 @@ mod tests {
     #[tokio::test]
     async fn test_server_server_info() {
         let state = StateRef::new();
-        let (server, fut) = TakoServer::start(state, Default::default(), None)
+        let (server, fut) = Backend::start(state, Default::default(), None)
             .await
             .unwrap();
         run_concurrent(fut, async move {
             assert!(
-                matches!(server.send_message(FromGatewayMessage::ServerInfo).await.unwrap(),
+                matches!(server.send_tako_message(FromGatewayMessage::ServerInfo).await.unwrap(),
                     ToGatewayMessage::ServerInfo(ServerInfo { worker_listen_port })
                     if worker_listen_port == server.worker_port()
                 )
