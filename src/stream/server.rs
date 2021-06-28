@@ -14,8 +14,11 @@ use tokio::sync::mpsc::{
     channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender,
 };
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use bytes::{BytesMut, BufMut};
+use byteorder::{ByteOrder, LittleEndian};
 
 const STREAM_BUFFER_SIZE: usize = 32;
+const HQ_LOG_VERSION: u32 = 0;
 
 enum StreamMessage {
     Message(FromStreamerMessage),
@@ -37,9 +40,14 @@ impl StreamServerState {
             Ok(s.clone())
         } else {
             if let Some(path) = self.registrations.get(&job_id) {
-                let (sender, receiver) = channel(STREAM_BUFFER_SIZE);
+                let (sender, mut receiver) = channel(STREAM_BUFFER_SIZE);
+                self.streams.insert(job_id, sender.clone());
                 let path = path.clone();
-                tokio::task::spawn_local(async move { file_writer(receiver, path).await });
+                tokio::task::spawn_local(async move {
+                    if let Err(e) = file_writer(&mut receiver, path).await {
+                        error_state(receiver, e.display());
+                    }
+                });
                 Ok(sender)
             } else {
                 anyhow::bail!("Job {} is not registered for streaming", job_id);
@@ -59,8 +67,37 @@ impl StreamServerStateRef {
     }
 }
 
-async fn file_writer(receiver: Receiver<StreamMessage>, path: PathBuf) {
-    let file = File::create(&path).await?;
+fn send_error()
+
+async fn error_state(receiver: Receiver<StreamMessage>, message: String) {
+    todo!()
+}
+
+async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: PathBuf) -> anyhow::Result<()> {
+    let mut file = File::create(&path).await?;
+    let mut buffer = BytesMut::with_capacity(10);
+    buffer.put_slice(b"hqlog/");
+    buffer.put_u32::<LittleEndian>(HQ_LOG_VERSION);
+    file.write_all(&header).await?;
+    while let Some(msg) = receiver.recv().await {
+        match msg {
+            StreamMessage::Message(FromStreamerMessage::Start(s)) => {
+                buffer.clear();
+                buffer.put_u8::<LittleEndian>(0);
+                buffer.put_u32::<LittleEndian>(s.task);
+                if let Err(e) = file.write_all(&buffer).await {
+                    return Err(e.into());
+                }
+            }
+            StreamMessage::Message(FromStreamerMessage::Data(s)) => {
+                buffer.clear();
+                buffer.put_u8::<LittleEndian>(0);
+                buffer.put_u32::<LittleEndian>(s.task);
+            }
+            StreamMessage::Close => break
+        }
+    }
+    Ok(())
 }
 
 pub fn start_stream_server() -> UnboundedSender<StreamServerControlMessage> {

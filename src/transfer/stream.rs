@@ -4,13 +4,10 @@ use std::num::NonZeroU64;
 pub type ChannelId = u32;
 
 pub struct StartTaskStreamMsg {
-    job: JobId,
     task: JobTaskId,
-    channel_names: Vec<String>,
 }
 
 pub struct DataMsg {
-    job: JobId,
     task: JobTaskId,
     channel: ChannelId,
     data: Vec<u8>,
@@ -33,5 +30,6 @@ pub struct EndTaskStreamResponseMsg {
 }
 
 pub enum ToStreamerMessage {
+    Error(String),
     EndResponse(EndTaskStreamResponseMsg),
 }
