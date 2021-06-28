@@ -16,12 +16,13 @@ use tokio::sync::mpsc::{
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use bytes::{BytesMut, BufMut};
 use byteorder::{ByteOrder, LittleEndian};
+use bincode::config::LittleEndian;
 
 const STREAM_BUFFER_SIZE: usize = 32;
 const HQ_LOG_VERSION: u32 = 0;
 
 enum StreamMessage {
-    Message(FromStreamerMessage),
+    Message(FromStreamerMessage, UnboundedSender<ToStreamerMessage>),
     Close,
 }
 
@@ -45,7 +46,7 @@ impl StreamServerState {
                 let path = path.clone();
                 tokio::task::spawn_local(async move {
                     if let Err(e) = file_writer(&mut receiver, path).await {
-                        error_state(receiver, e.display());
+                        error_state(receiver, e.to_string());
                     }
                 });
                 Ok(sender)
@@ -67,7 +68,11 @@ impl StreamServerStateRef {
     }
 }
 
-fn send_error()
+fn send_error(sender: UnboundedSender<ToStreamerMessage>, message: String) {
+    if sender.send(ToStreamerMessage::Error(message)).is_err() {
+        log::debug!("Sendiding stream error failed");
+    }
+}
 
 async fn error_state(receiver: Receiver<StreamMessage>, message: String) {
     todo!()
@@ -75,24 +80,30 @@ async fn error_state(receiver: Receiver<StreamMessage>, message: String) {
 
 async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: PathBuf) -> anyhow::Result<()> {
     let mut file = File::create(&path).await?;
-    let mut buffer = BytesMut::with_capacity(10);
+    let buffer = [12; u8];
+    /*let mut buffer = BytesMut::with_capacity(10);
     buffer.put_slice(b"hqlog/");
     buffer.put_u32::<LittleEndian>(HQ_LOG_VERSION);
-    file.write_all(&header).await?;
+    file.write_all(&header).await?;*/
+    //LittleEndian::
     while let Some(msg) = receiver.recv().await {
+        buffer.clear();
         match msg {
-            StreamMessage::Message(FromStreamerMessage::Start(s)) => {
-                buffer.clear();
+            let data = StreamMessage::Message(FromStreamerMessage::Start(s), response_sender) => {
                 buffer.put_u8::<LittleEndian>(0);
                 buffer.put_u32::<LittleEndian>(s.task);
                 if let Err(e) = file.write_all(&buffer).await {
+                    send_error(response_sender, e.to_string());
                     return Err(e.into());
                 }
+                None,
             }
             StreamMessage::Message(FromStreamerMessage::Data(s)) => {
                 buffer.clear();
-                buffer.put_u8::<LittleEndian>(0);
+                buffer.put_u8::<LittleEndian>(1);
                 buffer.put_u32::<LittleEndian>(s.task);
+                buffer.put_u32::<LittleEndian>(s.channel);
+
             }
             StreamMessage::Close => break
         }
