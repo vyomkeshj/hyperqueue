@@ -1,10 +1,13 @@
 use crate::common::WrappedRcRefCell;
 use crate::stream::control::StreamServerControlMessage;
-use crate::transfer::stream::{FromStreamerMessage, ToStreamerMessage};
+use crate::transfer::stream::{EndTaskStreamResponseMsg, FromStreamerMessage, ToStreamerMessage};
 use crate::{JobId, Map};
+use byteorder::{ByteOrder, LittleEndian};
+use bytes::{BufMut, BytesMut};
 use futures::stream::SplitStream;
 use futures::{SinkExt, StreamExt};
 use orion::aead::streaming::StreamOpener;
+use std::io::Cursor;
 use std::path::PathBuf;
 use tako::server::rpc::ConnectionDescriptor;
 use tako::transfer::auth::{forward_queue_to_sealed_sink, open_message};
@@ -14,9 +17,6 @@ use tokio::sync::mpsc::{
     channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender,
 };
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use bytes::{BytesMut, BufMut};
-use byteorder::{ByteOrder, LittleEndian};
-use bincode::config::LittleEndian;
 
 const STREAM_BUFFER_SIZE: usize = 32;
 const HQ_LOG_VERSION: u32 = 0;
@@ -80,32 +80,46 @@ async fn error_state(receiver: Receiver<StreamMessage>, message: String) {
 
 async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: PathBuf) -> anyhow::Result<()> {
     let mut file = File::create(&path).await?;
-    let buffer = [12; u8];
-    /*let mut buffer = BytesMut::with_capacity(10);
-    buffer.put_slice(b"hqlog/");
-    buffer.put_u32::<LittleEndian>(HQ_LOG_VERSION);
-    file.write_all(&header).await?;*/
-    //LittleEndian::
+    let mut buffer = [0u8; 12];
+
+    //let mut buf: &mut [u8] = &mut [0; 10];
+    let mut buffer = BytesMut::with_capacity(16);
+    buffer.put_slice(b"hqlog");
+    buffer.put_u32(HQ_LOG_VERSION);
+    buffer.put_u32(0); // Reserved bytes
+    file.write_all(&buffer).await?;
+
     while let Some(msg) = receiver.recv().await {
         buffer.clear();
         match msg {
-            let data = StreamMessage::Message(FromStreamerMessage::Start(s), response_sender) => {
-                buffer.put_u8::<LittleEndian>(0);
-                buffer.put_u32::<LittleEndian>(s.task);
+            StreamMessage::Message(FromStreamerMessage::Start(s), response_sender) => {
+                /*buf.put_u8(0);
+                buf.put_u32(s.task);
+                let usize = buf - &mut buffer;*/
                 if let Err(e) = file.write_all(&buffer).await {
                     send_error(response_sender, e.to_string());
                     return Err(e.into());
                 }
-                None,
             }
-            StreamMessage::Message(FromStreamerMessage::Data(s)) => {
-                buffer.clear();
-                buffer.put_u8::<LittleEndian>(1);
+            StreamMessage::Message(FromStreamerMessage::Data(s), response_sender) => {
+                todo!()
+                /*buffer.put_u8(1);
                 buffer.put_u32::<LittleEndian>(s.task);
-                buffer.put_u32::<LittleEndian>(s.channel);
-
+                buffer.put_u32::<LittleEndian>(s.channel);*/
             }
-            StreamMessage::Close => break
+            StreamMessage::Message(FromStreamerMessage::End(s), response_sender) => {
+                if let Err(e) = file.flush().await {
+                    send_error(response_sender, e.to_string());
+                    return Err(e.into());
+                }
+                let _ = response_sender.send(ToStreamerMessage::EndResponse(
+                    EndTaskStreamResponseMsg {
+                        job: todo!(),
+                        task: todo!(),
+                    },
+                ));
+            }
+            StreamMessage::Close => break,
         }
     }
     Ok(())
