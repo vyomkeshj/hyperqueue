@@ -8,7 +8,8 @@ use crate::dashboard::ui::styles::{style_footer_text, style_header_text};
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::text::draw_text;
 
-use crate::dashboard::ui::screens::home::tasks_table::WorkerJobsTable;
+use crate::dashboard::ui::screens::home::worker_jobs_table::WorkerJobsTable;
+use crate::dashboard::ui::screens::home::worker_cpu_util_chart::WorkerCpuUtilChart;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 #[derive(Default)]
@@ -20,11 +21,18 @@ pub struct HomeScreen {
     table_state: HomeScreenTableState,
 
     worker_info_chart: ClusterOverviewChart,
+    cpu_util_chart: WorkerCpuUtilChart,
+    chart_state: HomeScreenChartState,
 }
 
 pub enum HomeScreenTableState {
     WorkerUtilTable,
     WorkerJobsTable,
+}
+
+pub enum HomeScreenChartState {
+    WorkerPerCoreBarChart,
+    AverageCpuUtil,
 }
 
 impl Screen for HomeScreen {
@@ -35,8 +43,17 @@ impl Screen for HomeScreen {
         let selected_worker = self.worker_util_table.get_selected_item();
         self.worker_info_table.change_info(selected_worker);
         self.worker_job_table.update_current_worker(selected_worker);
+        self.cpu_util_chart.update_selected_worker(selected_worker);
 
-        self.worker_info_chart.draw(layout.chart_chunk, frame);
+        match &self.chart_state {
+            HomeScreenChartState::WorkerPerCoreBarChart => {
+                self.cpu_util_chart.draw(layout.chart_chunk, frame);
+            }
+            HomeScreenChartState::AverageCpuUtil => {
+                self.worker_info_chart.draw(layout.chart_chunk, frame);
+            }
+        }
+
         self.worker_info_table
             .draw(layout.info_chunk, frame, selected_worker);
         match &self.table_state {
@@ -52,6 +69,7 @@ impl Screen for HomeScreen {
     }
 
     fn update(&mut self, state: ClusterState) {
+        self.cpu_util_chart.update(state.overview.clone());
         self.worker_util_table.update(state.overview.clone());
         self.worker_info_table.update(state.worker_info);
         self.worker_job_table.update(state.worker_jobs_info);
@@ -76,8 +94,14 @@ impl Screen for HomeScreen {
                     self.worker_job_table.select_previous_job();
                 }
             },
-            Key::Right => self.table_state = HomeScreenTableState::WorkerJobsTable,
-            Key::Left => self.table_state = HomeScreenTableState::WorkerUtilTable,
+            Key::Right => {
+                self.table_state = HomeScreenTableState::WorkerJobsTable;
+                self.chart_state = HomeScreenChartState::WorkerPerCoreBarChart;
+            }
+            Key::Left => {
+                self.table_state = HomeScreenTableState::WorkerUtilTable;
+                self.chart_state = HomeScreenChartState::AverageCpuUtil;
+            }
             _ => {}
         }
     }
@@ -147,5 +171,11 @@ pub fn horizontal_chunks_with_margin(
 impl Default for HomeScreenTableState {
     fn default() -> Self {
         HomeScreenTableState::WorkerUtilTable
+    }
+}
+
+impl Default for HomeScreenChartState {
+    fn default() -> Self {
+        HomeScreenChartState::AverageCpuUtil
     }
 }

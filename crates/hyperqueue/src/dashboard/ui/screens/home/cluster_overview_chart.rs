@@ -127,7 +127,7 @@ impl ClusterOverviewChart {
             Dataset::default()
                 .name("med_usage")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(Color::Magenta))
+                .style(Style::default().fg(Color::Yellow))
                 .data(&med_usage),
         );
 

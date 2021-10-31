@@ -4,6 +4,7 @@ use tui::widgets::{Cell, Row};
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::table::{StatefulTable, TableColumnHeaders};
 use crate::transfer::messages::JobDetail;
+use crate::dashboard::ui::widgets::progressbar::{render_progress_bar_at, ProgressPrintStyle};
 
 #[derive(Default)]
 pub struct WorkerJobsTable {
@@ -47,27 +48,27 @@ impl WorkerJobsTable {
                 rect,
                 frame,
                 TableColumnHeaders {
-                    title: format!("Jobs running on worker {}", selected_worker).to_string(),
+                    title: format!("Jobs on worker {}", selected_worker).to_string(),
                     inline_help: "".to_string(),
                     table_headers: Some(vec![
                         "id",
                         "program",
                         "job_type",
-                        "definition",
-                        "tasks",
+                        "progress",
+                        "failed",
                         "resources",
                         "max_fails",
-                        "priority",
+                        "Status",
                         "time_limit",
                         "submission_date",
                     ]),
                     column_widths: vec![
                         Constraint::Percentage(3),
-                        Constraint::Percentage(10),
                         Constraint::Percentage(8),
-                        Constraint::Percentage(2),
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(5),
                         Constraint::Percentage(10),
-                        Constraint::Percentage(30),
                         Constraint::Percentage(5),
                         Constraint::Percentage(5),
                         Constraint::Percentage(10),
@@ -75,12 +76,13 @@ impl WorkerJobsTable {
                     ],
                 },
                 |data| {
+
                     Row::new(vec![
                         Cell::from(data.id.to_string()),
                         Cell::from(data.info.to_string()),
                         Cell::from(data.job_type.to_string()),
-                        Cell::from(data.program_def.to_string()),
                         Cell::from(data.tasks.to_string()),
+                        Cell::from(data.failed_tasks.to_string()),
                         Cell::from(data.resources.to_string()),
                         Cell::from(data.max_fails.to_string()),
                         Cell::from(data.priority.to_string()),
@@ -99,6 +101,7 @@ struct WorkerJobRow {
     pub job_type: String,
     pub program_def: String,
     pub tasks: String,
+    pub failed_tasks: String,
     pub resources: String,
     pub max_fails: String,
     pub priority: String,
@@ -116,7 +119,8 @@ fn create_rows(detail: Vec<(u32, JobDetail)>, for_worker: u32) -> Vec<WorkerJobR
                     info: detail.clone().info.name,
                     job_type: create_job_type_string(detail.clone()),
                     program_def: create_program_definition_string(detail.clone()),
-                    tasks: create_task_ids_string(detail.clone()),
+                    tasks: create_task_status_progressbar(detail.clone()),
+                    failed_tasks: create_task_failure_count(detail.clone()),
                     resources: create_resources_string(detail.clone()),
                     max_fails: create_max_fails_string(detail.clone()),
                     priority: create_priority_string(detail.clone()),
@@ -130,11 +134,22 @@ fn create_rows(detail: Vec<(u32, JobDetail)>, for_worker: u32) -> Vec<WorkerJobR
         .collect()
 }
 
-fn create_task_ids_string(detail: JobDetail) -> String {
-    let v = serde_json::to_value(&detail.tasks.iter().map(|x| x.task_id).collect::<Vec<u32>>())
-        .unwrap();
-    v.to_string()
+
+fn create_task_status_progressbar(detail: JobDetail) -> String {
+    let num_tasks = (detail.info.counters.n_finished_tasks + detail.info.counters.n_canceled_tasks+detail.info.counters.n_failed_tasks+detail.info.counters.n_running_tasks) ;
+    let task_prog_bar = render_progress_bar_at(
+        (detail.info.counters.n_finished_tasks / num_tasks) as f32,
+        20,
+        ProgressPrintStyle::default(),
+    );
+    task_prog_bar
 }
+
+fn create_task_failure_count(detail: JobDetail) -> String {
+    let num_tasks = (detail.info.counters.n_finished_tasks + detail.info.counters.n_canceled_tasks+detail.info.counters.n_failed_tasks+detail.info.counters.n_running_tasks) ;
+    format!("{}/{}", detail.info.counters.n_failed_tasks, num_tasks).to_string()
+}
+
 
 fn create_job_type_string(detail: JobDetail) -> String {
     let v = serde_json::to_value(&detail.job_type).unwrap();
@@ -167,6 +182,6 @@ fn create_submission_date_string(detail: JobDetail) -> String {
 }
 
 fn create_resources_string(detail: JobDetail) -> String {
-    let v = serde_json::to_value(&detail.resources).unwrap();
+    let v = serde_json::to_value(&detail.resources.cpus()).unwrap();
     v.to_string()
 }

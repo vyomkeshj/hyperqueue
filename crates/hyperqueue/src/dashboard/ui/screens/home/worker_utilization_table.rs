@@ -41,17 +41,15 @@ impl WorkerUtilTable {
                 inline_help: "".to_string(),
                 table_headers: Some(vec![
                     "worker_id",
-                    "#tasks",
+                    "#tasks running",
                     "cpu_util (%)",
                     "mem_util (%)",
-                    "timestamp",
                 ]),
                 column_widths: vec![
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
                 ],
             },
             |data| {
@@ -72,11 +70,6 @@ impl WorkerUtilTable {
                     Cell::from(data.num_tasks.to_string()),
                     Cell::from(cpu_prog_bar),
                     Cell::from(mem_prog_bar),
-                    Cell::from(
-                        data.collection_timestamp
-                            .map(|v| v.to_string())
-                            .unwrap_or_else(|| "N/A".to_string()),
-                    ),
                 ])
             },
         );
