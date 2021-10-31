@@ -1,7 +1,7 @@
 use termion::event::Key;
 
 use crate::dashboard::ui::screen::{ClusterState, Screen};
-use crate::dashboard::ui::screens::home::chart_section::ClusterOverviewChart;
+use crate::dashboard::ui::screens::home::cluster_overview_chart::ClusterOverviewChart;
 use crate::dashboard::ui::screens::home::info_section::WorkerInfoTable;
 use crate::dashboard::ui::screens::home::worker_utilization_table::WorkerUtilTable;
 use crate::dashboard::ui::styles::{style_footer_text, style_header_text};

@@ -1,4 +1,4 @@
-pub mod chart_section;
+pub mod cluster_overview_chart;
 pub mod info_section;
 pub mod screen;
 pub mod tasks_table;
