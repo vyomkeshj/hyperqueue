@@ -74,7 +74,7 @@ pub enum ToWorkerMessage {
     Stop,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub struct TaskFinishedMsg {
     pub id: TaskId,
     pub size: u64,

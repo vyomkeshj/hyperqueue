@@ -594,7 +594,8 @@ async fn get_monitoring_events(
     request: MonitoringEventRequest,
 ) -> ToClientMessage {
     let response = tako_ref
-        .send_tako_message(FromGatewayMessage::GetMonitoringEvents(request))
+        .send_tako_message(
+            FromGatewayMessage::GetMonitoringEvents(request))
         .await
         .unwrap();
     match response {

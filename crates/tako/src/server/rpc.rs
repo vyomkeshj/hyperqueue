@@ -256,12 +256,15 @@ pub async fn worker_receive_loop<
         let mut comm = comm_ref.get_mut();
         match message {
             FromWorkerMessage::TaskFinished(msg) => {
+                core.get_event_storage().on_task_finished_received(worker_id, msg);
                 on_task_finished(&mut core, &mut *comm, worker_id, msg);
             }
             FromWorkerMessage::TaskRunning(msg) => {
+                core.get_event_storage().on_task_running_received(worker_id, msg.clone());
                 on_task_running(&mut core, &mut *comm, worker_id, msg);
             }
             FromWorkerMessage::TaskFailed(msg) => {
+                core.get_event_storage().on_task_failed_received(worker_id, msg.clone());
                 on_task_error(&mut core, &mut *comm, worker_id, msg.id, msg.info);
             }
             FromWorkerMessage::DataDownloaded(msg) => {

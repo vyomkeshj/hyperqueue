@@ -1,5 +1,5 @@
 use crate::messages::gateway::LostWorkerReason;
-use crate::messages::worker::WorkerOverview;
+use crate::messages::worker::{TaskFailedMsg, TaskFinishedMsg, TaskRunningMsg, WorkerOverview};
 use crate::{static_assert_size, WorkerId};
 
 use crate::messages::common::WorkerConfiguration;
@@ -42,6 +42,10 @@ pub enum MonitoringEventPayload {
     WorkerConnected(WorkerId, Box<WorkerConfiguration>),
     WorkerLost(WorkerId, LostWorkerReason),
     OverviewUpdate(WorkerOverview),
+
+    TaskRunning(WorkerId, TaskRunningMsg),
+    TaskFinished(WorkerId, TaskFinishedMsg),
+    TaskFailed(WorkerId, TaskFailedMsg)
 }
 
 // Keep the size of the event structure in check
@@ -95,6 +99,21 @@ impl EventStorage {
     #[inline]
     pub fn on_overview_received(&mut self, worker_overview: WorkerOverview) {
         self.insert_event(MonitoringEventPayload::OverviewUpdate(worker_overview));
+    }
+
+    #[inline]
+    pub fn on_task_running_received(&mut self, from_id: WorkerId, msg: TaskRunningMsg) {
+        self.insert_event(MonitoringEventPayload::TaskRunning(from_id, msg));
+    }
+
+    #[inline]
+    pub fn on_task_finished_received(&mut self, from_id: WorkerId, msg: TaskFinishedMsg) {
+        self.insert_event(MonitoringEventPayload::TaskFinished(from_id, msg));
+    }
+
+    #[inline]
+    pub fn on_task_failed_received(&mut self, from_id: WorkerId, msg: TaskFailedMsg) {
+        self.insert_event(MonitoringEventPayload::TaskFailed(from_id, msg));
     }
 
     fn insert_event(&mut self, payload: MonitoringEventPayload) {
