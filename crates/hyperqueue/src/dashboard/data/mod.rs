@@ -11,6 +11,7 @@ use crate::transfer::messages::{FromClientMessage, ToClientMessage};
 use crate::{rpc_call, WorkerId};
 
 pub mod worker_timeline;
+pub mod tasks_timeline;
 
 #[derive(Default)]
 pub struct DashboardData {
