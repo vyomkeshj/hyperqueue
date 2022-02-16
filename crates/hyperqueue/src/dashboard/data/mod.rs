@@ -5,6 +5,7 @@ use tako::messages::common::WorkerConfiguration;
 use tako::messages::gateway::MonitoringEventRequest;
 use tako::messages::worker::WorkerOverview;
 
+use crate::dashboard::data::alloc_timeline::AllocationTimeline;
 use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
@@ -12,6 +13,7 @@ use crate::transfer::connection::ClientConnection;
 use crate::transfer::messages::{FromClientMessage, ToClientMessage};
 use crate::{rpc_call, WorkerId};
 
+pub mod alloc_timeline;
 pub mod task_timeline;
 pub mod worker_timeline;
 
@@ -23,6 +25,8 @@ pub struct DashboardData {
     events: Vec<MonitoringEvent>,
     /// Tracks worker connection and loss events
     worker_timeline: WorkerTimeline,
+    /// Tracks the automatic allocator events
+    alloc_timeline: AllocationTimeline,
     /// Tracks task related events
     tasks_timeline: TaskTimeline,
 }
@@ -45,6 +49,7 @@ impl DashboardData {
         // Update data views
         self.worker_timeline.handle_new_events(&events);
         self.tasks_timeline.handle_new_events(&events);
+        self.alloc_timeline.handle_new_events(&events);
         self.events.append(&mut events);
     }
 
