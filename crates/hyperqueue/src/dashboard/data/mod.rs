@@ -11,7 +11,7 @@ use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
 use crate::transfer::connection::ClientConnection;
-use crate::transfer::messages::{FromClientMessage, ToClientMessage};
+use crate::transfer::messages::{AllocationQueueParams, FromClientMessage, ToClientMessage};
 use crate::{rpc_call, WorkerId};
 
 pub mod alloc_timeline;
@@ -58,6 +58,13 @@ impl DashboardData {
         time: SystemTime,
     ) -> impl Iterator<Item = (&DescriptorId, &AllocationQueueInfo)> + '_ {
         self.alloc_timeline.get_queue_infos_at(time)
+    }
+
+    pub fn query_allocation_params(
+        &self,
+        descriptor_id: DescriptorId,
+    ) -> Option<&AllocationQueueParams> {
+        self.alloc_timeline.get_queue_params_for(&descriptor_id)
     }
 
     pub fn query_task_history_for_worker(

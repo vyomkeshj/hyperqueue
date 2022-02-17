@@ -139,4 +139,13 @@ impl AllocationTimeline {
             .filter(move |(_, info)| info.creation_time <= time)
             .map(|(id, info)| (id, info))
     }
+
+    pub fn get_queue_params_for(
+        &self,
+        descriptor_id: &DescriptorId,
+    ) -> Option<&AllocationQueueParams> {
+        self.queue_timelines
+            .get(descriptor_id)
+            .map(|queue_info| &queue_info.queue_params)
+    }
 }
