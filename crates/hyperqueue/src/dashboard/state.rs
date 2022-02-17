@@ -18,9 +18,9 @@ pub struct DashboardState {
 }
 
 enum DashboardScreenState {
-    ClusterOverviewScreen,
-    WorkerOverviewScreen,
-    AutoAllocatorScreen,
+    ClusterOverview,
+    WorkerOverview,
+    AutoAllocator,
 }
 
 impl DashboardState {
@@ -30,7 +30,7 @@ impl DashboardState {
             cluster_overview_screen: ClusterOverviewScreen::default(),
             worker_overview_screen: WorkerOverviewScreen::default(),
             auto_allocator_screen: Default::default(),
-            current_screen: DashboardScreenState::ClusterOverviewScreen,
+            current_screen: DashboardScreenState::ClusterOverview,
             controller,
         }
     }
@@ -43,14 +43,14 @@ impl DashboardState {
     pub fn change_current_screen(&mut self, next_screen: ChangeScreenCommand) {
         match next_screen {
             ChangeScreenCommand::ClusterOverviewScreen => {
-                self.current_screen = DashboardScreenState::ClusterOverviewScreen;
+                self.current_screen = DashboardScreenState::ClusterOverview;
             }
             ChangeScreenCommand::WorkerOverviewScreen(worker_id) => {
                 self.worker_overview_screen.set_worker_id(worker_id);
-                self.current_screen = DashboardScreenState::WorkerOverviewScreen;
+                self.current_screen = DashboardScreenState::WorkerOverview;
             }
             ChangeScreenCommand::AutoAllocatorScreen => {
-                self.current_screen = DashboardScreenState::AutoAllocatorScreen;
+                self.current_screen = DashboardScreenState::AutoAllocator;
             }
         }
     }
@@ -59,13 +59,13 @@ impl DashboardState {
         &mut self,
     ) -> (&mut dyn Screen, &mut ScreenController) {
         match self.current_screen {
-            DashboardScreenState::ClusterOverviewScreen => {
+            DashboardScreenState::ClusterOverview => {
                 (&mut self.cluster_overview_screen, &mut self.controller)
             }
-            DashboardScreenState::WorkerOverviewScreen => {
+            DashboardScreenState::WorkerOverview => {
                 (&mut self.worker_overview_screen, &mut self.controller)
             }
-            DashboardScreenState::AutoAllocatorScreen => {
+            DashboardScreenState::AutoAllocator => {
                 (&mut self.auto_allocator_screen, &mut self.controller)
             }
         }
