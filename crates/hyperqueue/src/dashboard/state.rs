@@ -1,6 +1,7 @@
 use crate::dashboard::data::DashboardData;
 use crate::dashboard::ui::screen::controller::{ChangeScreenCommand, ScreenController};
 use crate::dashboard::ui::screen::Screen;
+use crate::dashboard::ui::screens::auto_allocator::screen::AutoAllocatorScreen;
 use crate::dashboard::ui::screens::home::screen::ClusterOverviewScreen;
 use crate::dashboard::ui::screens::worker::screen::WorkerOverviewScreen;
 use tako::common::WrappedRcRefCell;
@@ -8,6 +9,7 @@ use tako::common::WrappedRcRefCell;
 pub struct DashboardState {
     cluster_overview_screen: ClusterOverviewScreen,
     worker_overview_screen: WorkerOverviewScreen,
+    auto_allocator_screen: AutoAllocatorScreen,
 
     data_source: WrappedRcRefCell<DashboardData>,
 
@@ -18,6 +20,7 @@ pub struct DashboardState {
 enum DashboardScreenState {
     ClusterOverviewScreen,
     WorkerOverviewScreen,
+    AutoAllocatorScreen,
 }
 
 impl DashboardState {
@@ -26,6 +29,7 @@ impl DashboardState {
             data_source: WrappedRcRefCell::wrap(data_source),
             cluster_overview_screen: ClusterOverviewScreen::default(),
             worker_overview_screen: WorkerOverviewScreen::default(),
+            auto_allocator_screen: Default::default(),
             current_screen: DashboardScreenState::ClusterOverviewScreen,
             controller,
         }
@@ -45,6 +49,9 @@ impl DashboardState {
                 self.worker_overview_screen.set_worker_id(worker_id);
                 self.current_screen = DashboardScreenState::WorkerOverviewScreen;
             }
+            ChangeScreenCommand::AutoAllocatorScreen => {
+                self.current_screen = DashboardScreenState::AutoAllocatorScreen;
+            }
         }
     }
 
@@ -57,6 +64,9 @@ impl DashboardState {
             }
             DashboardScreenState::WorkerOverviewScreen => {
                 (&mut self.worker_overview_screen, &mut self.controller)
+            }
+            DashboardScreenState::AutoAllocatorScreen => {
+                (&mut self.auto_allocator_screen, &mut self.controller)
             }
         }
     }
