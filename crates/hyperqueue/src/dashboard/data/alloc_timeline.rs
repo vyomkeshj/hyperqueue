@@ -10,7 +10,7 @@ pub struct AllocationQueueInfo {
     pub creation_time: SystemTime,
     pub removal_time: Option<SystemTime>,
 
-    allocations: Map<AllocationId, AllocationInfo>,
+    pub allocations: Map<AllocationId, AllocationInfo>,
 }
 
 pub struct AllocationInfo {
@@ -128,5 +128,15 @@ impl AllocationTimeline {
                 _ => {}
             }
         }
+    }
+
+    pub fn get_queue_infos_at(
+        &self,
+        time: SystemTime,
+    ) -> impl Iterator<Item = (&DescriptorId, &AllocationQueueInfo)> + '_ {
+        self.queue_timelines
+            .iter()
+            .filter(move |(_, info)| info.creation_time <= time)
+            .map(|(id, info)| (id, info))
     }
 }

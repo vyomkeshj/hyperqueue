@@ -5,7 +5,8 @@ use tako::messages::common::WorkerConfiguration;
 use tako::messages::gateway::MonitoringEventRequest;
 use tako::messages::worker::WorkerOverview;
 
-use crate::dashboard::data::alloc_timeline::AllocationTimeline;
+use crate::dashboard::data::alloc_timeline::{AllocationQueueInfo, AllocationTimeline};
+use crate::server::autoalloc::DescriptorId;
 use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
@@ -48,9 +49,15 @@ impl DashboardData {
 
         // Update data views
         self.worker_timeline.handle_new_events(&events);
-        self.tasks_timeline.handle_new_events(&events);
         self.alloc_timeline.handle_new_events(&events);
         self.events.append(&mut events);
+    }
+
+    pub fn query_allocation_queues_at(
+        &self,
+        time: SystemTime,
+    ) -> impl Iterator<Item = (&DescriptorId, &AllocationQueueInfo)> + '_ {
+        self.alloc_timeline.get_queue_infos_at(time)
     }
 
     pub fn query_task_history_for_worker(
