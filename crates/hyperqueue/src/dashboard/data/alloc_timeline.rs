@@ -148,4 +148,14 @@ impl AllocationTimeline {
             .get(descriptor_id)
             .map(|queue_info| &queue_info.queue_params)
     }
+
+    pub fn get_allocations_info_at(
+        &self,
+        descriptor_id: DescriptorId,
+        time: SystemTime,
+    ) -> Option<&Map<AllocationId, AllocationInfo>> {
+        self.get_queue_infos_at(time)
+            .find(|(id, _)| **id == descriptor_id)
+            .map(|(_, info)| &info.allocations)
+    }
 }

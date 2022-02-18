@@ -1,12 +1,14 @@
 use crate::dashboard::data::worker_timeline::WorkerTimeline;
 use std::time::{Duration, SystemTime};
-use tako::common::WrappedRcRefCell;
+use tako::common::{Map, WrappedRcRefCell};
 use tako::messages::common::WorkerConfiguration;
 use tako::messages::gateway::MonitoringEventRequest;
 use tako::messages::worker::WorkerOverview;
 
-use crate::dashboard::data::alloc_timeline::{AllocationQueueInfo, AllocationTimeline};
-use crate::server::autoalloc::DescriptorId;
+use crate::dashboard::data::alloc_timeline::{
+    AllocationInfo, AllocationQueueInfo, AllocationTimeline,
+};
+use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
@@ -65,6 +67,15 @@ impl DashboardData {
         descriptor_id: DescriptorId,
     ) -> Option<&AllocationQueueParams> {
         self.alloc_timeline.get_queue_params_for(&descriptor_id)
+    }
+
+    pub fn query_allocations_info_at(
+        &self,
+        descriptor_id: DescriptorId,
+        time: SystemTime,
+    ) -> Option<&Map<AllocationId, AllocationInfo>> {
+        self.alloc_timeline
+            .get_allocations_info_at(descriptor_id, time)
     }
 
     pub fn query_task_history_for_worker(
