@@ -52,8 +52,9 @@ impl<T> StatefulTable<T> {
         None
     }
 
+    /// Clears the selected item on the table.
     pub fn clear_selection(&mut self) {
-        self.state.select(None)
+        self.state.select(None);
     }
 
     /// Select next item in the table, wrapping to the beginning if the selection was at the last

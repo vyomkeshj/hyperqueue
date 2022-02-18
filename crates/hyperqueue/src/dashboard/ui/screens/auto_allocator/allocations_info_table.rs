@@ -31,12 +31,16 @@ impl AllocationInfoTable {
         selection.map(|row| &row.allocation_id)
     }
 
+    pub fn clear_selection(&mut self) {
+        self.table.clear_selection();
+    }
+
     pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame) {
         self.table.draw(
             rect,
             frame,
             TableColumnHeaders {
-                title: "Allocations".to_string(),
+                title: "Allocations <2>".to_string(),
                 inline_help: "".to_string(),
                 table_headers: Some(vec![
                     "Allocation ID",

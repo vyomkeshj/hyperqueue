@@ -35,7 +35,7 @@ impl AllocationQueueInfoTable {
             rect,
             frame,
             TableColumnHeaders {
-                title: "Allocation Queues".to_string(),
+                title: "Allocation Queues <1>".to_string(),
                 inline_help: "".to_string(),
                 table_headers: Some(vec![
                     "Descriptor ID",

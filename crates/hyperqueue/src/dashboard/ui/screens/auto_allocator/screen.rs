@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::time::SystemTime;
 use termion::event::Key;
 
@@ -20,6 +21,13 @@ pub struct AutoAllocatorScreen {
     queue_info_table: AllocationQueueInfoTable,
     queue_params_table: QueueParamsTable,
     allocations_info_table: AllocationInfoTable,
+
+    component_in_focus: FocussedComponent,
+}
+
+enum FocussedComponent {
+    QueueParamsTable,
+    AllocationInfoTable,
 }
 
 impl Screen for AutoAllocatorScreen {
@@ -73,9 +81,29 @@ impl Screen for AutoAllocatorScreen {
     /// Handles key presses for the components of the screen
     fn handle_key(&mut self, key: Key, controller: &mut ScreenController) {
         match key {
-            Key::Down => self.queue_info_table.select_next_queue(),
-            Key::Up => self.queue_info_table.select_previous_queue(),
+            Key::Down => match self.component_in_focus {
+                FocussedComponent::QueueParamsTable => self.queue_info_table.select_next_queue(),
+                FocussedComponent::AllocationInfoTable => {
+                    self.allocations_info_table.select_next_allocation()
+                }
+            },
+            Key::Up => match self.component_in_focus {
+                FocussedComponent::QueueParamsTable => {
+                    self.queue_info_table.select_previous_queue()
+                }
+                FocussedComponent::AllocationInfoTable => {
+                    self.allocations_info_table.select_previous_allocation()
+                }
+            },
             Key::Right => controller.show_cluster_overview(),
+            Key::Char(char) => match char {
+                '1' => {
+                    self.component_in_focus = FocussedComponent::QueueParamsTable;
+                    self.allocations_info_table.clear_selection();
+                }
+                '2' => self.component_in_focus = FocussedComponent::AllocationInfoTable,
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -83,11 +111,11 @@ impl Screen for AutoAllocatorScreen {
 
 /**
 *  __________________________
-   |     Queue Params      |
    |--------Header---------|
    |-----------------------|
-   |  q_info  | alloc_info |
-   -------------------------
+   |  queues  |            |
+   |----------| alloc_info |
+   | q_params |            |
    |________Footer_________|
  **/
 struct AutoAllocScreenLayout {
@@ -127,5 +155,11 @@ impl AutoAllocScreenLayout {
             allocation_info_chunk: component_area[1],
             footer_chunk: auto_alloc_screen_chunks[2],
         }
+    }
+}
+
+impl Default for FocussedComponent {
+    fn default() -> Self {
+        FocussedComponent::QueueParamsTable
     }
 }
