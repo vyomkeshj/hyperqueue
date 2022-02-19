@@ -95,6 +95,7 @@ impl<T> StatefulTable<T> {
         frame: &mut DashboardFrame,
         columns: TableColumnHeaders,
         row_cell_mapper: F,
+        is_selected: bool,
     ) where
         T: 'a,
         F: Fn(&'a T) -> Row<'a>,
@@ -104,10 +105,14 @@ impl<T> StatefulTable<T> {
 
         if self.has_items() {
             let rows = self.items.iter().map(row_cell_mapper);
+            let style = match is_selected {
+                true => styles::style_selected(),
+                false => styles::style_deselected(),
+            };
             let mut table = Table::new(rows)
                 .block(body_block)
                 .highlight_style(styles::style_table_highlight())
-                .style(styles::style_table_row())
+                .style(style)
                 .highlight_symbol(HIGHLIGHT)
                 .widths(&columns.column_widths);
 
@@ -120,6 +125,7 @@ impl<T> StatefulTable<T> {
             let header_text = vec![Spans::from("No data")];
             let paragraph = Paragraph::new(header_text)
                 .block(body_block)
+                .style(styles::style_no_data())
                 .alignment(Alignment::Left)
                 .wrap(Wrap { trim: true });
             frame.render_widget(paragraph, rect);

@@ -72,6 +72,7 @@ impl WorkerUtilTable {
                     Cell::from(mem_prog_bar).style(get_progress_bar_color(mem_progress)),
                 ])
             },
+            true,
         );
     }
 }

@@ -15,7 +15,7 @@ use crate::dashboard::ui::screens::worker::cpu_util_table::{
 use crate::dashboard::ui::screens::worker::worker_config_table::WorkerConfigTable;
 use crate::dashboard::ui::screens::worker::worker_tasks_table::WorkerTasksTable;
 use tako::WorkerId;
-use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::layout::{Constraint, Direction, Rect};
 
 #[derive(Default)]
 pub struct WorkerOverviewScreen {
@@ -62,6 +62,7 @@ impl Screen for WorkerOverviewScreen {
             layout.worker_util_chunk,
             frame,
             &cpu_usage_columns,
+            false,
         );
 
         self.worker_tasks_table

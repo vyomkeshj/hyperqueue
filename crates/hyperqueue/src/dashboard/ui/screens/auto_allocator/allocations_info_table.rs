@@ -35,7 +35,7 @@ impl AllocationInfoTable {
         self.table.clear_selection();
     }
 
-    pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame) {
+    pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame, is_selected: bool) {
         self.table.draw(
             rect,
             frame,
@@ -66,6 +66,7 @@ impl AllocationInfoTable {
                     Cell::from(data.finish_time.as_str()),
                 ])
             },
+            is_selected,
         );
     }
 }

@@ -32,6 +32,7 @@ impl WorkerConfigTable {
                 column_widths: vec![Constraint::Percentage(30), Constraint::Percentage(70)],
             },
             |data| Row::new(vec![Cell::from(data.label), Cell::from(data.data.as_str())]),
+            false,
         );
     }
 }

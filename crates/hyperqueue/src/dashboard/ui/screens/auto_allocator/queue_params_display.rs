@@ -34,6 +34,7 @@ impl QueueParamsTable {
                 column_widths: vec![Constraint::Percentage(30), Constraint::Percentage(70)],
             },
             |data| Row::new(vec![Cell::from(data.label), Cell::from(data.data.as_str())]),
+            false,
         );
     }
 }
@@ -65,7 +66,7 @@ fn create_rows(params: &AllocationQueueParams) -> Vec<QueueParamsDataRow> {
         },
         QueueParamsDataRow {
             label: "Additional Args: ",
-            data: params.additional_args.join(", "),
+            data: params.additional_args.join(" "),
         },
         QueueParamsDataRow {
             label: "Worker CPU Arg: ",
@@ -73,7 +74,7 @@ fn create_rows(params: &AllocationQueueParams) -> Vec<QueueParamsDataRow> {
         },
         QueueParamsDataRow {
             label: "Worker Resource Args: ",
-            data: params.worker_resources_args.join(", "),
+            data: params.worker_resources_args.join(" "),
         },
         QueueParamsDataRow {
             label: "Max Worker Count: ",

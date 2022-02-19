@@ -30,7 +30,7 @@ impl AllocationQueueInfoTable {
         selection.map(|row| row.descriptor_id)
     }
 
-    pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame) {
+    pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame, is_selected: bool) {
         self.table.draw(
             rect,
             frame,
@@ -58,6 +58,7 @@ impl AllocationQueueInfoTable {
                     Cell::from(data.removal_time.as_str()),
                 ])
             },
+            is_selected,
         );
     }
 }

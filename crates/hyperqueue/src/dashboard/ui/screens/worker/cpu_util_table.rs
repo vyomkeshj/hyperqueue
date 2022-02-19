@@ -15,6 +15,7 @@ pub fn render_cpu_util_table(
     rect: Rect,
     frame: &mut DashboardFrame,
     constraints: &[Constraint],
+    is_selected: bool,
 ) {
     let indexed_util: Vec<(&f32, i32)> = cpu_util_list.iter().zip(1..).collect();
     let rows: Vec<Row> = indexed_util
@@ -56,10 +57,14 @@ pub fn render_cpu_util_table(
     ));
     let body_block = styles::table_block_with_title(title);
 
+    let style = match is_selected {
+        true => styles::style_selected(),
+        false => styles::style_deselected(),
+    };
     let table = Table::new(rows)
         .block(body_block)
         .highlight_style(styles::style_table_highlight())
-        .style(styles::style_table_row())
+        .style(style)
         .widths(constraints);
 
     frame.render_widget(table, rect);

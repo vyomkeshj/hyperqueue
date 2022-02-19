@@ -40,11 +40,22 @@ impl Screen for AutoAllocatorScreen {
             style_header_text(),
         );
 
-        self.queue_info_table.draw(layout.queue_info_chunk, frame);
+        match self.component_in_focus {
+            FocussedComponent::QueueParamsTable => {
+                self.queue_info_table
+                    .draw(layout.queue_info_chunk, frame, true);
+                self.allocations_info_table
+                    .draw(layout.allocation_info_chunk, frame, false);
+            }
+            FocussedComponent::AllocationInfoTable => {
+                self.queue_info_table
+                    .draw(layout.queue_info_chunk, frame, false);
+                self.allocations_info_table
+                    .draw(layout.allocation_info_chunk, frame, true);
+            }
+        }
         self.queue_params_table
             .draw(layout.allocation_queue_params_chunk, frame);
-        self.allocations_info_table
-            .draw(layout.allocation_info_chunk, frame);
 
         draw_text(
             "Press right_arrow to go to Cluster Overview",
