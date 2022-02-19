@@ -28,8 +28,8 @@ impl QueueParamsTable {
             rect,
             frame,
             TableColumnHeaders {
-                title: "Allocation Queue Params".to_string(),
-                inline_help: "".to_string(),
+                title: "Allocation Queue Params",
+                inline_help: "",
                 table_headers: None,
                 column_widths: vec![Constraint::Percentage(30), Constraint::Percentage(70)],
             },

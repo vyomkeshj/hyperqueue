@@ -40,8 +40,8 @@ impl AllocationInfoTable {
             rect,
             frame,
             TableColumnHeaders {
-                title: "Allocations <2>".to_string(),
-                inline_help: "".to_string(),
+                title: "Allocations <2>",
+                inline_help: "",
                 table_headers: Some(vec![
                     "Allocation ID",
                     "#Workers",
