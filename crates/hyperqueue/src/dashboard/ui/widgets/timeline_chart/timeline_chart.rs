@@ -26,14 +26,14 @@ enum AllocState {
     Finished,
 }
 
-pub struct AllocationsChartData {
+struct AllocationsChartData {
     /// Allocation chart data.
     allocation_records: Map<AllocationId, AllocationInfoPoint>,
     /// max time to calculate duration
     max_time: SystemTime,
 }
 
-struct AllocationsChart {
+pub struct AllocationsChart {
     chart_data: AllocationsChartData,
     view_size: Duration,
 }
@@ -99,7 +99,7 @@ impl AllocationsChart {
 
     pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame) {
         let canvas = Canvas::default()
-            .block(Block::default().borders(Borders::ALL).title("World"))
+            .block(Block::default().borders(Borders::ALL).title("Alloc Timeline"))
             .paint(|ctx| {
                 ctx.draw(&self.chart_data);
             })

@@ -15,12 +15,14 @@ use crate::dashboard::ui::screens::auto_allocator::queue_info_table::AllocationQ
 use crate::dashboard::ui::screens::auto_allocator::queue_params_display::QueueParamsTable;
 use crate::server::autoalloc::DescriptorId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
+use crate::dashboard::ui::widgets::timeline_chart::timeline_chart::AllocationsChart;
 
 #[derive(Default)]
 pub struct AutoAllocatorScreen {
     queue_info_table: AllocationQueueInfoTable,
     queue_params_table: QueueParamsTable,
     allocations_info_table: AllocationInfoTable,
+    allocations_chart: AllocationsChart,
 
     component_in_focus: FocussedComponent,
 }
@@ -57,6 +59,9 @@ impl Screen for AutoAllocatorScreen {
         self.queue_params_table
             .draw(layout.allocation_queue_params_chunk, frame);
 
+        self.allocations_chart
+            .draw(layout.chart_chunk, frame);
+
         draw_text(
             "Press right_arrow to go to Cluster Overview",
             layout.footer_chunk,
@@ -69,6 +74,13 @@ impl Screen for AutoAllocatorScreen {
         let queue_infos: Vec<(&DescriptorId, &AllocationQueueInfo)> =
             data.query_allocation_queues_at(SystemTime::now()).collect();
         self.queue_info_table.update(queue_infos);
+
+        if let Some(descriptor) = self
+            .queue_info_table
+            .get_selected_queue_descriptor() {
+            self.allocations_chart.update(data, descriptor);
+        }
+
 
         if let Some(queue_params) = self
             .queue_info_table
@@ -130,6 +142,7 @@ impl Screen for AutoAllocatorScreen {
    |________Footer_________|
  **/
 struct AutoAllocScreenLayout {
+    chart_chunk: Rect,
     allocation_queue_params_chunk: Rect,
     header_chunk: Rect,
     queue_info_chunk: Rect,
@@ -142,7 +155,8 @@ impl AutoAllocScreenLayout {
         let auto_alloc_screen_chunks = tui::layout::Layout::default()
             .constraints(vec![
                 Constraint::Percentage(5),
-                Constraint::Percentage(90),
+                Constraint::Percentage(40),
+                Constraint::Percentage(50),
                 Constraint::Percentage(5),
             ])
             .direction(Direction::Vertical)
@@ -152,7 +166,7 @@ impl AutoAllocScreenLayout {
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
             .direction(Direction::Horizontal)
             .margin(0)
-            .split(auto_alloc_screen_chunks[1]);
+            .split(auto_alloc_screen_chunks[2]);
 
         let queue_info_area = Layout::default()
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -160,11 +174,12 @@ impl AutoAllocScreenLayout {
             .split(component_area[0]);
 
         Self {
+            chart_chunk: auto_alloc_screen_chunks[1],
             header_chunk: auto_alloc_screen_chunks[0],
             queue_info_chunk: queue_info_area[0],
             allocation_queue_params_chunk: queue_info_area[1],
             allocation_info_chunk: component_area[1],
-            footer_chunk: auto_alloc_screen_chunks[2],
+            footer_chunk: auto_alloc_screen_chunks[3],
         }
     }
 }
