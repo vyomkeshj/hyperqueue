@@ -13,9 +13,9 @@ use crate::dashboard::ui::screen::controller::ScreenController;
 use crate::dashboard::ui::screens::auto_allocator::allocations_info_table::AllocationInfoTable;
 use crate::dashboard::ui::screens::auto_allocator::queue_info_table::AllocationQueueInfoTable;
 use crate::dashboard::ui::screens::auto_allocator::queue_params_display::QueueParamsTable;
+use crate::dashboard::ui::widgets::timeline_chart::timeline_chart::AllocationsChart;
 use crate::server::autoalloc::DescriptorId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
-use crate::dashboard::ui::widgets::timeline_chart::timeline_chart::AllocationsChart;
 
 #[derive(Default)]
 pub struct AutoAllocatorScreen {
@@ -59,8 +59,7 @@ impl Screen for AutoAllocatorScreen {
         self.queue_params_table
             .draw(layout.allocation_queue_params_chunk, frame);
 
-        self.allocations_chart
-            .draw(layout.chart_chunk, frame);
+        self.allocations_chart.draw(layout.chart_chunk, frame);
 
         draw_text(
             "Press right_arrow to go to Cluster Overview",
@@ -75,12 +74,9 @@ impl Screen for AutoAllocatorScreen {
             data.query_allocation_queues_at(SystemTime::now()).collect();
         self.queue_info_table.update(queue_infos);
 
-        if let Some(descriptor) = self
-            .queue_info_table
-            .get_selected_queue_descriptor() {
+        if let Some(descriptor) = self.queue_info_table.get_selected_queue_descriptor() {
             self.allocations_chart.update(data, descriptor);
         }
-
 
         if let Some(queue_params) = self
             .queue_info_table
