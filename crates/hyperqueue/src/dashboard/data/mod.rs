@@ -8,8 +8,8 @@ use tako::messages::worker::WorkerOverview;
 use crate::dashboard::data::alloc_timeline::{
     AllocationInfo, AllocationQueueInfo, AllocationTimeline,
 };
-use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
+use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
 use crate::transfer::connection::ClientConnection;

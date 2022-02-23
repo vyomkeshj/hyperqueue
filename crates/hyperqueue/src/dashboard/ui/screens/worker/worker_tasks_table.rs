@@ -68,7 +68,7 @@ impl WorkerTasksTable {
                     Cell::from(task_row.run_time.as_str()),
                 ])
             },
-            true
+            true,
         );
     }
 }
