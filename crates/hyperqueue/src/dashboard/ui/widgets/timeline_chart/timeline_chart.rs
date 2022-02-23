@@ -50,7 +50,6 @@ impl Shape for AllocationsChartData {
                         .unwrap_or_default()
                         .as_secs_f64();
                 if let Some((x, y)) = painter.get_point(x_pos, y_pos) {
-                    //log::info!("coord = {x},{y}");
                     painter.paint(
                         x,
                         y,
@@ -70,6 +69,8 @@ impl Shape for AllocationsChartData {
 impl AllocationsChart {
     pub fn update(&mut self, data: &DashboardData, query_descriptor: DescriptorId) {
         self.chart_data.allocation_records.clear();
+        self.chart_data.max_time = SystemTime::now();
+
         let mut query_time = self.chart_data.max_time - self.chart_data.view_size;
         while query_time <= self.chart_data.max_time {
             query_time += Duration::from_secs(1);
