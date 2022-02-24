@@ -72,6 +72,8 @@ impl AllocationsChart {
         self.chart_data.max_time = SystemTime::now();
 
         let mut query_time = self.chart_data.max_time - self.chart_data.view_size;
+        let mut all_time_allocs: Vec<(AllocationId, AllocationInfoPoint)> = vec![];
+
         while query_time <= self.chart_data.max_time {
             query_time += Duration::from_secs(1);
 
@@ -79,30 +81,44 @@ impl AllocationsChart {
                 let mut points: Vec<(AllocationId, AllocationInfoPoint)> = alloc_map
                     .iter()
                     .map(|(id, info)| {
-                        let current_state = match info.start_time {
-                            None => AllocState::Queued,
-                            Some(_) => match info.finish_time {
-                                None => AllocState::Running,
-                                Some(_) => AllocState::Finished,
-                            },
-                        };
-                        (
-                            id.to_string(),
-                            AllocationInfoPoint {
-                                current_state,
-                                time: query_time,
-                            },
-                        )
+                        if info.start_time.is_some() && info.start_time.unwrap() < query_time {
+                            (
+                                id.to_string(),
+                                AllocationInfoPoint {
+                                    current_state: AllocState::Running,
+                                    time: query_time,
+                                },
+                            )
+                        } else if info.finish_time.is_some()
+                            && info.finish_time.unwrap() < query_time
+                        {
+                            (
+                                id.to_string(),
+                                AllocationInfoPoint {
+                                    current_state: AllocState::Finished,
+                                    time: query_time,
+                                },
+                            )
+                        } else {
+                            (
+                                id.to_string(),
+                                AllocationInfoPoint {
+                                    current_state: AllocState::Queued,
+                                    time: query_time,
+                                },
+                            )
+                        }
                     })
                     .collect();
-                //fixme: check correctness
-                for (id, point) in points {
-                    if let Some(points) = self.chart_data.allocation_records.get_mut(&id) {
-                        points.push(point);
-                    } else {
-                        self.chart_data.allocation_records.insert(id, vec![point]);
-                    }
-                }
+                all_time_allocs.append(&mut points);
+            }
+        }
+        //fixme: check correctness
+        for (id, point) in all_time_allocs {
+            if let Some(points) = self.chart_data.allocation_records.get_mut(&id) {
+                points.push(point);
+            } else {
+                self.chart_data.allocation_records.insert(id, vec![point]);
             }
         }
     }
@@ -126,7 +142,7 @@ impl AllocationsChart {
 impl Default for AllocationsChartData {
     fn default() -> Self {
         Self {
-            view_size: Duration::from_secs(300),
+            view_size: Duration::from_secs(1000),
             allocation_records: Default::default(),
             max_time: SystemTime::now(),
         }
