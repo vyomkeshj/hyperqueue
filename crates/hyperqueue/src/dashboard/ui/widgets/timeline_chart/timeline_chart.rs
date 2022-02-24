@@ -7,12 +7,12 @@ use tui::widgets::canvas::{Canvas, Painter, Shape};
 use crate::dashboard::data::DashboardData;
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::server::autoalloc::{AllocationId, DescriptorId};
+use chrono::{DateTime, Local};
 use std::default::Default;
 use tui::style::Color;
 use tui::widgets::{Block, Borders};
 
-const ALLOC_HEIGHT: f64 = 20.0;
-const ALLOC_Y_MARGIN: f64 = 5.0;
+const Y_LABEL_OFFSET: f64 = 1.00;
 
 struct AllocationInfoPoint {
     current_state: AllocState,
@@ -34,13 +34,14 @@ struct AllocationsChartData {
     view_size: Duration,
 }
 
+#[derive(Default)]
 pub struct AllocationsChart {
     chart_data: AllocationsChartData,
 }
 
 impl Shape for AllocationsChartData {
     fn draw(&self, painter: &mut Painter) {
-        let mut y_pos: f64 = 0.0;
+        let mut y_pos: f64 = Y_LABEL_OFFSET;
         for (_, alloc_info_pt) in &self.allocation_records {
             for point in alloc_info_pt {
                 let x_pos = self.view_size.as_secs_f64()
@@ -81,7 +82,12 @@ impl AllocationsChart {
                 let mut points: Vec<(AllocationId, AllocationInfoPoint)> = alloc_map
                     .iter()
                     .map(|(id, info)| {
-                        if info.start_time.is_some() && info.start_time.unwrap() < query_time {
+                        if info.start_time.is_some()
+                            && info.start_time.unwrap() < query_time
+                            && (info.finish_time.is_none()
+                                || info.finish_time.is_some()
+                                    && info.finish_time.unwrap() > query_time)
+                        {
                             (
                                 id.to_string(),
                                 AllocationInfoPoint {
@@ -132,9 +138,23 @@ impl AllocationsChart {
             )
             .paint(|ctx| {
                 ctx.draw(&self.chart_data);
+                let time = SystemTime::now();
+                let current_max: DateTime<Local> = time.into();
+                let begin_time = time - self.chart_data.view_size;
+                let current_min: DateTime<Local> = begin_time.into();
+
+                ctx.print(0.0, 0.0, current_min.format("%T").to_string());
+                ctx.print(
+                    self.chart_data.view_size.as_secs_f64() - 45.00,
+                    0.0,
+                    current_max.format("%T").to_string(),
+                );
             })
-            .x_bounds([0.0, self.chart_data.view_size.as_secs_f64()]) //fixme: use view size
-            .y_bounds([0.0, self.chart_data.allocation_records.len() as f64]);
+            .x_bounds([0.0, self.chart_data.view_size.as_secs_f64()])
+            .y_bounds([
+                0.0,
+                self.chart_data.allocation_records.len() as f64 + Y_LABEL_OFFSET,
+            ]);
         frame.render_widget(canvas, rect);
     }
 }
@@ -145,14 +165,6 @@ impl Default for AllocationsChartData {
             view_size: Duration::from_secs(1000),
             allocation_records: Default::default(),
             max_time: SystemTime::now(),
-        }
-    }
-}
-
-impl Default for AllocationsChart {
-    fn default() -> Self {
-        Self {
-            chart_data: Default::default(),
         }
     }
 }
