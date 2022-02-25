@@ -10,10 +10,10 @@ use crate::dashboard::ui::widgets::text::draw_text;
 use crate::dashboard::data::alloc_timeline::AllocationQueueInfo;
 use crate::dashboard::data::DashboardData;
 use crate::dashboard::ui::screen::controller::ScreenController;
+use crate::dashboard::ui::screens::auto_allocator::alloc_timeline_chart::AllocationsChart;
 use crate::dashboard::ui::screens::auto_allocator::allocations_info_table::AllocationInfoTable;
 use crate::dashboard::ui::screens::auto_allocator::queue_info_table::AllocationQueueInfoTable;
 use crate::dashboard::ui::screens::auto_allocator::queue_params_display::QueueParamsTable;
-use crate::dashboard::ui::widgets::timeline_chart::timeline_chart::AllocationsChart;
 use crate::server::autoalloc::DescriptorId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
