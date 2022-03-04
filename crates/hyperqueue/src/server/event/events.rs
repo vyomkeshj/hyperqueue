@@ -1,12 +1,14 @@
 use crate::server::autoalloc::AllocationId;
 use crate::server::autoalloc::DescriptorId;
-use crate::transfer::messages::AllocationQueueParams;
-use crate::WorkerId;
+use crate::transfer::messages::{AllocationQueueParams, JobDescription};
+use crate::{JobId, JobTaskCount, TakoTaskId, WorkerId};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use tako::messages::common::WorkerConfiguration;
 use tako::messages::gateway::LostWorkerReason;
 use tako::messages::worker::WorkerOverview;
-use tako::{static_assert_size, TaskId};
+use tako::static_assert_size;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum MonitoringEventPayload {
@@ -16,15 +18,19 @@ pub enum MonitoringEventPayload {
     WorkerLost(WorkerId, LostWorkerReason),
     /// Worker has proactively send its overview (task status and HW utilization report) to the server
     WorkerOverviewReceived(WorkerOverview),
+    /// A Job was submitted by the user.
+    JobCreated(JobId, Box<JobInfo>),
+    /// All tasks of the job have finished.
+    JobCompleted(JobId, DateTime<Utc>),
     /// Task has started to execute on some worker
     TaskStarted {
-        task_id: TaskId,
+        task_id: TakoTaskId,
         worker_id: WorkerId,
     },
     /// Task has been finished
-    TaskFinished(TaskId),
+    TaskFinished(TakoTaskId),
     // Task that failed to execute
-    TaskFailed(TaskId),
+    TaskFailed(TakoTaskId),
     /// New allocation queue has been created
     AllocationQueueCreated(DescriptorId, Box<AllocationQueueParams>),
     /// Allocation queue has been removed
@@ -39,6 +45,19 @@ pub enum MonitoringEventPayload {
     AllocationStarted(DescriptorId, AllocationId),
     /// PBS/Slurm allocation has finished executing
     AllocationFinished(DescriptorId, AllocationId),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JobInfo {
+    pub name: String,
+    pub job_desc: JobDescription,
+
+    pub task_ids: Vec<TakoTaskId>,
+    pub max_fails: Option<JobTaskCount>,
+    pub log: Option<PathBuf>,
+
+    pub submission_date: DateTime<Utc>,
+    pub completion_date: Option<DateTime<Utc>>,
 }
 
 // Keep the size of the event structure in check

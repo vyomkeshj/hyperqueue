@@ -6,6 +6,7 @@ use tako::messages::gateway::{
 };
 
 use crate::server::autoalloc::AutoAllocState;
+use crate::server::event::events::JobInfo;
 use crate::server::event::storage::EventStorage;
 use crate::server::job::Job;
 use crate::server::rpc::Backend;
@@ -104,6 +105,18 @@ impl State {
             .base_task_id_to_job_id
             .insert(job.base_task_id, job_id)
             .is_none());
+        self.event_storage.on_job_submitted(
+            job_id,
+            JobInfo {
+                name: job.name.clone(),
+                job_desc: job.job_desc.clone(),
+                task_ids: job.tasks.iter().map(|(id, _)| *id).collect(),
+                max_fails: job.max_fails,
+                log: job.log.clone(),
+                submission_date: job.submission_date,
+                completion_date: None,
+            },
+        );
         assert!(self.jobs.insert(job_id, job).is_none());
     }
 
@@ -123,6 +136,24 @@ impl State {
             Some(job)
         } else {
             None
+        }
+    }
+
+    pub fn get_job_by_tako_task_id(&self, task_id: TakoTaskId) -> Option<&Job> {
+        let job_id: JobId = *self
+            .base_task_id_to_job_id
+            .range(..=task_id)
+            .rev()
+            .next()?
+            .1;
+        let job = self.jobs.get(&job_id)?;
+        let task_belongs_to_job = task_id
+            < TakoTaskId::new(
+                job.base_task_id.as_num() + job.n_tasks() as <TaskId as ItemId>::IdType,
+            );
+        match task_belongs_to_job {
+            true => Some(job),
+            false => None,
         }
     }
 
@@ -207,6 +238,13 @@ impl State {
                 unreachable!()
             }
         };
+
+        if let Some((job_id, Some(completion_date))) = self
+            .get_job_by_tako_task_id(msg.id)
+            .map(|job| (job.job_id, job.completion_date))
+        {
+            self.event_storage.on_job_completed(job_id, completion_date);
+        }
     }
 
     pub fn process_worker_new(&mut self, msg: NewWorkerMessage) {
