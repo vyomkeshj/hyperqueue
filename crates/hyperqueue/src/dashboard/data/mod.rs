@@ -8,7 +8,7 @@ use tako::messages::worker::WorkerOverview;
 use crate::dashboard::data::alloc_timeline::{
     AllocationInfo, AllocationQueueInfo, AllocationTimeline,
 };
-use crate::dashboard::data::task_timeline::{JobTimeline, TaskInfo};
+use crate::dashboard::data::job_timeline::{JobTimeline, TaskInfo};
 use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
@@ -17,7 +17,7 @@ use crate::transfer::messages::{AllocationQueueParams, FromClientMessage, ToClie
 use crate::{rpc_call, TakoTaskId, WorkerId};
 
 pub mod alloc_timeline;
-pub mod task_timeline;
+pub mod job_timeline;
 pub mod worker_timeline;
 
 #[derive(Default)]

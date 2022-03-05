@@ -6,7 +6,7 @@ use crate::dashboard::ui::styles::{style_footer, style_header_text, table_style_
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::text::draw_text;
 
-use crate::dashboard::data::task_timeline::TaskInfo;
+use crate::dashboard::data::job_timeline::TaskInfo;
 use crate::dashboard::data::DashboardData;
 use crate::dashboard::ui::screen::controller::ScreenController;
 use crate::dashboard::ui::screens::worker::cpu_util_table::{
