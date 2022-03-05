@@ -14,6 +14,7 @@ use crate::dashboard::ui::screens::worker::cpu_util_table::{
 };
 use crate::dashboard::ui::screens::worker::worker_config_table::WorkerConfigTable;
 use crate::dashboard::ui::screens::worker::worker_tasks_table::WorkerTasksTable;
+use crate::TakoTaskId;
 use tako::WorkerId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
@@ -86,7 +87,7 @@ impl Screen for WorkerOverviewScreen {
                     self.worker_per_core_cpu_util = cpu_util.clone()
                 }
                 // Update Tasks Table
-                let tasks_info: Vec<&TaskInfo> =
+                let tasks_info: Vec<(&TakoTaskId, &TaskInfo)> =
                     data.query_task_history_for_worker(worker_id).collect();
                 self.worker_tasks_table.update(tasks_info);
                 // Update Worker Configuration Information

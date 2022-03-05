@@ -57,7 +57,6 @@ pub struct JobInfo {
     pub log: Option<PathBuf>,
 
     pub submission_date: DateTime<Utc>,
-    pub completion_date: Option<DateTime<Utc>>,
 }
 
 // Keep the size of the event structure in check

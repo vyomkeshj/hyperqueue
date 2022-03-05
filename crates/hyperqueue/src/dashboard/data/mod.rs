@@ -8,13 +8,13 @@ use tako::messages::worker::WorkerOverview;
 use crate::dashboard::data::alloc_timeline::{
     AllocationInfo, AllocationQueueInfo, AllocationTimeline,
 };
-use crate::dashboard::data::task_timeline::{TaskInfo, TaskTimeline};
+use crate::dashboard::data::task_timeline::{JobTimeline, TaskInfo};
 use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
 use crate::transfer::connection::ClientConnection;
 use crate::transfer::messages::{AllocationQueueParams, FromClientMessage, ToClientMessage};
-use crate::{rpc_call, WorkerId};
+use crate::{rpc_call, TakoTaskId, WorkerId};
 
 pub mod alloc_timeline;
 pub mod task_timeline;
@@ -29,7 +29,7 @@ pub struct DashboardData {
     /// Tracks worker connection and loss events
     worker_timeline: WorkerTimeline,
     /// Tracks task related events
-    tasks_timeline: TaskTimeline,
+    tasks_timeline: JobTimeline,
     /// Tracks the automatic allocator events
     alloc_timeline: AllocationTimeline,
 }
@@ -59,7 +59,7 @@ impl DashboardData {
     pub fn query_task_history_for_worker(
         &self,
         worker_id: WorkerId,
-    ) -> impl Iterator<Item = &TaskInfo> + '_ {
+    ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
         self.tasks_timeline
             .get_worker_task_history(worker_id, SystemTime::now())
     }

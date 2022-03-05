@@ -114,7 +114,6 @@ impl State {
                 max_fails: job.max_fails,
                 log: job.log.clone(),
                 submission_date: job.submission_date,
-                completion_date: None,
             },
         );
         assert!(self.jobs.insert(job_id, job).is_none());

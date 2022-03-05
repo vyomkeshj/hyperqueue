@@ -3,6 +3,7 @@ use crate::dashboard::data::task_timeline::{DashboardTaskState, TaskInfo};
 use crate::dashboard::ui::styles::table_style_selected;
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::table::{StatefulTable, TableColumnHeaders};
+use crate::TakoTaskId;
 use chrono::{DateTime, Local};
 use std::time::SystemTime;
 use tako::TaskId;
@@ -21,7 +22,7 @@ pub struct WorkerTasksTable {
 }
 
 impl WorkerTasksTable {
-    pub fn update(&mut self, tasks_info: Vec<&TaskInfo>) {
+    pub fn update(&mut self, tasks_info: Vec<(&TakoTaskId, &TaskInfo)>) {
         let rows = create_rows(tasks_info);
         self.table.set_items(rows);
     }
@@ -82,8 +83,8 @@ struct WorkerTaskRow {
     run_time: String,
 }
 
-fn create_rows(mut rows: Vec<&TaskInfo>) -> Vec<WorkerTaskRow> {
-    rows.sort_by_key(|task_info| {
+fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<WorkerTaskRow> {
+    rows.sort_by_key(|(_, task_info)| {
         let status_index = match task_info.current_task_state {
             DashboardTaskState::Running => 0,
             DashboardTaskState::Finished => 1,
@@ -96,7 +97,7 @@ fn create_rows(mut rows: Vec<&TaskInfo>) -> Vec<WorkerTaskRow> {
     });
 
     rows.iter()
-        .map(|task_info| {
+        .map(|(task_id, task_info)| {
             let start_time: DateTime<Local> = task_info.start_time.into();
 
             let end_time = task_info
@@ -114,7 +115,7 @@ fn create_rows(mut rows: Vec<&TaskInfo>) -> Vec<WorkerTaskRow> {
             .unwrap_or_default();
 
             WorkerTaskRow {
-                task_id: task_info.task_id,
+                task_id: **task_id,
                 task_state: match task_info.current_task_state {
                     DashboardTaskState::Running => RUNNING.to_string(),
                     DashboardTaskState::Finished => FINISHED.to_string(),
