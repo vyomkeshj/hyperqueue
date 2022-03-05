@@ -15,7 +15,7 @@ pub struct TaskInfo {
     pub worker_id: WorkerId,
     pub start_time: SystemTime,
     pub end_time: Option<SystemTime>,
-    pub current_task_state: DashboardTaskState,
+    task_end_state: Option<DashboardTaskState>,
 }
 
 #[derive(Copy, Clone)]
@@ -28,7 +28,18 @@ pub enum DashboardTaskState {
 impl TaskInfo {
     pub fn set_end_time_and_status(&mut self, end_time: &SystemTime, status: DashboardTaskState) {
         self.end_time = Some(*end_time);
-        self.current_task_state = status;
+        self.task_end_state = Some(status);
+    }
+
+    /// Returns the state of the task at given time. Time must be after start_time of the task.
+    pub fn get_task_state_at(&self, time: SystemTime) -> DashboardTaskState {
+        assert!(time >= self.start_time);
+
+        match self.end_time {
+            None => DashboardTaskState::Running,
+            Some(end_time) if end_time > time => DashboardTaskState::Running,
+            _ => self.task_end_state.unwrap(),
+        }
     }
 }
 
@@ -70,7 +81,7 @@ impl JobTimeline {
                                     worker_id: *worker_id,
                                     start_time: event.time,
                                     end_time: None,
-                                    current_task_state: DashboardTaskState::Running,
+                                    task_end_state: None,
                                 },
                             )
                         });

@@ -85,7 +85,7 @@ struct WorkerTaskRow {
 
 fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<WorkerTaskRow> {
     rows.sort_by_key(|(_, task_info)| {
-        let status_index = match task_info.current_task_state {
+        let status_index = match task_info.get_task_state_at(SystemTime::now()) {
             DashboardTaskState::Running => 0,
             DashboardTaskState::Finished => 1,
             DashboardTaskState::Failed => 2,
@@ -116,7 +116,7 @@ fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<WorkerTaskRow> {
 
             WorkerTaskRow {
                 task_id: **task_id,
-                task_state: match task_info.current_task_state {
+                task_state: match task_info.get_task_state_at(SystemTime::now()) {
                     DashboardTaskState::Running => RUNNING.to_string(),
                     DashboardTaskState::Finished => FINISHED.to_string(),
                     DashboardTaskState::Failed => FAILED.to_string(),
