@@ -13,7 +13,7 @@ use crate::dashboard::ui::screens::worker::cpu_util_table::{
     get_column_constraints, render_cpu_util_table,
 };
 use crate::dashboard::ui::screens::worker::worker_config_table::WorkerConfigTable;
-use crate::dashboard::ui::screens::worker::worker_tasks_table::WorkerTasksTable;
+use crate::dashboard::ui::widgets::tasks_table::TasksTable;
 use crate::TakoTaskId;
 use tako::WorkerId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
@@ -23,7 +23,7 @@ pub struct WorkerOverviewScreen {
     /// The worker info screen shows data for this worker
     worker_id: Option<WorkerId>,
     worker_info_table: WorkerConfigTable,
-    worker_tasks_table: WorkerTasksTable,
+    worker_tasks_table: TasksTable,
 
     worker_per_core_cpu_util: Vec<f32>,
 }

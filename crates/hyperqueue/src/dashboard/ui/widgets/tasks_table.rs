@@ -17,11 +17,11 @@ const FINISHED: &str = "FINISHED";
 const FAILED: &str = "FAILED";
 
 #[derive(Default)]
-pub struct WorkerTasksTable {
-    table: StatefulTable<WorkerTaskRow>,
+pub struct TasksTable {
+    table: StatefulTable<TaskRow>,
 }
 
-impl WorkerTasksTable {
+impl TasksTable {
     pub fn update(&mut self, tasks_info: Vec<(&TakoTaskId, &TaskInfo)>) {
         let rows = create_rows(tasks_info);
         self.table.set_items(rows);
@@ -75,7 +75,7 @@ impl WorkerTasksTable {
     }
 }
 
-struct WorkerTaskRow {
+struct TaskRow {
     task_id: TaskId,
     task_state: String,
     start_time: String,
@@ -83,7 +83,7 @@ struct WorkerTaskRow {
     run_time: String,
 }
 
-fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<WorkerTaskRow> {
+fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<TaskRow> {
     rows.sort_by_key(|(_, task_info)| {
         let status_index = match task_info.get_task_state_at(SystemTime::now()) {
             DashboardTaskState::Running => 0,
@@ -114,7 +114,7 @@ fn create_rows(mut rows: Vec<(&TakoTaskId, &TaskInfo)>) -> Vec<WorkerTaskRow> {
             }
             .unwrap_or_default();
 
-            WorkerTaskRow {
+            TaskRow {
                 task_id: **task_id,
                 task_state: match task_info.get_task_state_at(SystemTime::now()) {
                     DashboardTaskState::Running => RUNNING.to_string(),
