@@ -62,9 +62,9 @@ impl DashboardData {
     pub fn query_task_history_for_job(
         &self,
         job_id: JobId,
+        at_time: SystemTime,
     ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
-        self.job_timeline
-            .get_job_task_history(job_id, SystemTime::now())
+        self.job_timeline.get_job_task_history(job_id, at_time)
     }
 
     pub fn query_task_history_for_worker(

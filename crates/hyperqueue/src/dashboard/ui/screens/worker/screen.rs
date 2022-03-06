@@ -2,7 +2,9 @@ use std::time::SystemTime;
 use termion::event::Key;
 
 use crate::dashboard::ui::screen::Screen;
-use crate::dashboard::ui::styles::{style_footer, style_header_text, table_style_deselected};
+use crate::dashboard::ui::styles::{
+    style_footer, style_header_text, table_style_deselected, table_style_selected,
+};
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::text::draw_text;
 
@@ -66,8 +68,12 @@ impl Screen for WorkerOverviewScreen {
             table_style_deselected(),
         );
 
-        self.worker_tasks_table
-            .draw(layout.tasks_table_chunk, frame);
+        self.worker_tasks_table.draw(
+            "Tasks On Worker",
+            layout.tasks_table_chunk,
+            frame,
+            table_style_selected(),
+        );
         self.worker_info_table
             .draw(layout.worker_info_table_chunk, frame);
     }

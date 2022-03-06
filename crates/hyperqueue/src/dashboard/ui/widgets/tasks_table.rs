@@ -1,12 +1,13 @@
 use crate::common::format::human_duration;
 use crate::dashboard::data::job_timeline::{DashboardTaskState, TaskInfo};
-use crate::dashboard::ui::styles::table_style_selected;
+
 use crate::dashboard::ui::terminal::DashboardFrame;
 use crate::dashboard::ui::widgets::table::{StatefulTable, TableColumnHeaders};
 use crate::TakoTaskId;
 use chrono::{DateTime, Local};
 use std::time::SystemTime;
 use tako::TaskId;
+use termion::event::Key;
 use tui::layout::{Constraint, Rect};
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Cell, Row};
@@ -44,12 +45,26 @@ impl TasksTable {
         selection.map(|row| row.task_id)
     }
 
-    pub fn draw(&mut self, rect: Rect, frame: &mut DashboardFrame) {
+    pub fn handle_key(&mut self, key: Key) {
+        match key {
+            Key::Down => self.select_next_task(),
+            Key::Up => self.select_previous_task(),
+            _ => {}
+        }
+    }
+
+    pub fn draw(
+        &mut self,
+        title: &'static str,
+        rect: Rect,
+        frame: &mut DashboardFrame,
+        table_style: Style,
+    ) {
         self.table.draw(
             rect,
             frame,
             TableColumnHeaders {
-                title: "Tasks Info",
+                title,
                 inline_help: "",
                 table_headers: Some(vec!["Task ID", "State", "Start", "End", "Makespan"]),
                 column_widths: vec![
@@ -70,7 +85,7 @@ impl TasksTable {
                     Cell::from(task_row.run_time.as_str()),
                 ])
             },
-            table_style_selected(),
+            table_style,
         );
     }
 }
