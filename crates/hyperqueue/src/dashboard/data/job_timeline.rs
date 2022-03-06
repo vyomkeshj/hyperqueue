@@ -71,20 +71,21 @@ impl JobTimeline {
                 }
 
                 MonitoringEventPayload::TaskStarted { task_id, worker_id } => {
-                    self.job_timeline
+                    if let Some((_, info)) = self
+                        .job_timeline
                         .iter_mut()
                         .find(|(_, info)| info.job_info.task_ids.contains(task_id))
-                        .and_then(|(_, info)| {
-                            info.job_tasks_info.insert(
-                                *task_id,
-                                TaskInfo {
-                                    worker_id: *worker_id,
-                                    start_time: event.time,
-                                    end_time: None,
-                                    task_end_state: None,
-                                },
-                            )
-                        });
+                    {
+                        info.job_tasks_info.insert(
+                            *task_id,
+                            TaskInfo {
+                                worker_id: *worker_id,
+                                start_time: event.time,
+                                end_time: None,
+                                task_end_state: None,
+                            },
+                        );
+                    }
                 }
                 MonitoringEventPayload::TaskFinished(finished_id) => {
                     update_task_status(

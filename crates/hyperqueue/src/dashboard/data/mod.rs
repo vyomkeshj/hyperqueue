@@ -10,7 +10,6 @@ use crate::dashboard::data::alloc_timeline::{
 };
 use crate::dashboard::data::job_timeline::{JobTimeline, TaskInfo};
 use crate::server::autoalloc::{AllocationId, DescriptorId};
-use crate::server::event::events::MonitoringEventPayload;
 use crate::server::event::MonitoringEvent;
 use crate::transfer::connection::ClientConnection;
 use crate::transfer::messages::{AllocationQueueParams, FromClientMessage, ToClientMessage};
@@ -24,8 +23,6 @@ pub mod worker_timeline;
 pub struct DashboardData {
     /// The event_id until which the data has already been fetched for
     fetched_until: Option<u32>,
-    /// All events received from the client
-    events: Vec<MonitoringEvent>,
     /// Tracks worker connection and loss events
     worker_timeline: WorkerTimeline,
     /// Tracks task related events
@@ -53,7 +50,6 @@ impl DashboardData {
         self.worker_timeline.handle_new_events(&events);
         self.tasks_timeline.handle_new_events(&events);
         self.alloc_timeline.handle_new_events(&events);
-        self.events.append(&mut events);
     }
 
     pub fn query_task_history_for_worker(
@@ -105,31 +101,11 @@ impl DashboardData {
         worker_id: WorkerId,
         time: SystemTime,
     ) -> Option<&WorkerOverview> {
-        self.query_overview_at(time)
-            .into_iter()
-            .find(|overview| overview.id == worker_id)
+        self.worker_timeline.get_worker_overview_at(worker_id, time)
     }
 
-    pub fn query_overview_at(&self, time: SystemTime) -> Vec<&WorkerOverview> {
-        let mut overview_vec: Vec<&WorkerOverview> = vec![];
-        let connected_worker_ids = self.worker_timeline.get_connected_worker_ids(time);
-        for id in connected_worker_ids {
-            if let Some(last_overview) = self.query_last_overview_for(id) {
-                overview_vec.push(last_overview);
-            }
-        }
-        overview_vec
-    }
-
-    fn query_last_overview_for(&self, worker_id: WorkerId) -> Option<&WorkerOverview> {
-        for evt in self.events.iter().rev() {
-            if let MonitoringEventPayload::WorkerOverviewReceived(overview) = &evt.payload {
-                if worker_id == overview.id {
-                    return Some(overview);
-                }
-            }
-        }
-        None
+    pub fn query_last_received_overviews(&self, time: SystemTime) -> Vec<&WorkerOverview> {
+        self.worker_timeline.get_last_received_overviews(time)
     }
 }
 
