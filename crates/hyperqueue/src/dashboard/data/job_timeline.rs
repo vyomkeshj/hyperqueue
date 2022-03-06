@@ -8,6 +8,8 @@ use tako::common::Map;
 pub struct DashboardJobInfo {
     pub job_info: JobInfo,
     pub job_tasks_info: Map<TakoTaskId, TaskInfo>,
+    pub job_creation_time: SystemTime,
+
     pub completion_date: Option<DateTime<Utc>>,
 }
 
@@ -16,6 +18,11 @@ pub struct TaskInfo {
     pub start_time: SystemTime,
     pub end_time: Option<SystemTime>,
     task_end_state: Option<DashboardTaskState>,
+}
+
+#[derive(Default)]
+pub struct JobTimeline {
+    job_timeline: Map<JobId, DashboardJobInfo>,
 }
 
 #[derive(Copy, Clone)]
@@ -43,11 +50,6 @@ impl TaskInfo {
     }
 }
 
-#[derive(Default)]
-pub struct JobTimeline {
-    job_timeline: Map<JobId, DashboardJobInfo>,
-}
-
 impl JobTimeline {
     /// Assumes that `events` are sorted by time.
     pub fn handle_new_events(&mut self, events: &[MonitoringEvent]) {
@@ -59,6 +61,7 @@ impl JobTimeline {
                         DashboardJobInfo {
                             job_info: *job_info.clone(),
                             job_tasks_info: Default::default(),
+                            job_creation_time: event.time,
                             completion_date: None,
                         },
                     );
@@ -108,15 +111,35 @@ impl JobTimeline {
         }
     }
 
+    pub fn get_job_task_history(
+        &self,
+        job_id: JobId,
+        time: SystemTime,
+    ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
+        self.get_jobs_created_before(time)
+            .filter(move |(&id, _)| id == job_id)
+            .flat_map(|(_, info)| &info.job_tasks_info)
+    }
+
     pub fn get_worker_task_history(
         &self,
         worker_id: WorkerId,
         at_time: SystemTime,
     ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
+        self.get_jobs_created_before(at_time)
+            .flat_map(|(_, info)| &info.job_tasks_info)
+            .filter(move |(_, task_info)| {
+                task_info.worker_id == worker_id && task_info.start_time <= at_time
+            })
+    }
+
+    pub fn get_jobs_created_before(
+        &self,
+        time: SystemTime,
+    ) -> impl Iterator<Item = (&JobId, &DashboardJobInfo)> + '_ {
         self.job_timeline
             .iter()
-            .flat_map(|(_, info)| &info.job_tasks_info)
-            .filter(move |(_, info)| info.worker_id == worker_id && info.start_time <= at_time)
+            .filter(move |(_, info)| info.job_creation_time <= time)
     }
 }
 

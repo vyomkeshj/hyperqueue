@@ -8,12 +8,12 @@ use tako::messages::worker::WorkerOverview;
 use crate::dashboard::data::alloc_timeline::{
     AllocationInfo, AllocationQueueInfo, AllocationTimeline,
 };
-use crate::dashboard::data::job_timeline::{JobTimeline, TaskInfo};
+use crate::dashboard::data::job_timeline::{DashboardJobInfo, JobTimeline, TaskInfo};
 use crate::server::autoalloc::{AllocationId, DescriptorId};
 use crate::server::event::MonitoringEvent;
 use crate::transfer::connection::ClientConnection;
 use crate::transfer::messages::{AllocationQueueParams, FromClientMessage, ToClientMessage};
-use crate::{rpc_call, TakoTaskId, WorkerId};
+use crate::{rpc_call, JobId, TakoTaskId, WorkerId};
 
 pub mod alloc_timeline;
 pub mod job_timeline;
@@ -26,7 +26,7 @@ pub struct DashboardData {
     /// Tracks worker connection and loss events
     worker_timeline: WorkerTimeline,
     /// Tracks task related events
-    tasks_timeline: JobTimeline,
+    job_timeline: JobTimeline,
     /// Tracks the automatic allocator events
     alloc_timeline: AllocationTimeline,
 }
@@ -48,15 +48,30 @@ impl DashboardData {
 
         // Update data views
         self.worker_timeline.handle_new_events(&events);
-        self.tasks_timeline.handle_new_events(&events);
+        self.job_timeline.handle_new_events(&events);
         self.alloc_timeline.handle_new_events(&events);
+    }
+
+    pub fn query_jobs_created_before(
+        &self,
+        time: SystemTime,
+    ) -> impl Iterator<Item = (&JobId, &DashboardJobInfo)> + '_ {
+        self.job_timeline.get_jobs_created_before(time)
+    }
+
+    pub fn query_task_history_for_job(
+        &self,
+        job_id: JobId,
+    ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
+        self.job_timeline
+            .get_job_task_history(job_id, SystemTime::now())
     }
 
     pub fn query_task_history_for_worker(
         &self,
         worker_id: WorkerId,
     ) -> impl Iterator<Item = (&TakoTaskId, &TaskInfo)> + '_ {
-        self.tasks_timeline
+        self.job_timeline
             .get_worker_task_history(worker_id, SystemTime::now())
     }
 
