@@ -34,7 +34,7 @@ impl DashboardState {
             worker_overview_screen: WorkerOverviewScreen::default(),
             auto_allocator_screen: Default::default(),
             job_overview_screen: Default::default(),
-            current_screen: DashboardScreenState::ClusterOverview,
+            current_screen: DashboardScreenState::JobOverview,
             controller,
         }
     }

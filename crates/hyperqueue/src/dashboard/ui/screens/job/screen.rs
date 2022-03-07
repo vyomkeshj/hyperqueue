@@ -16,11 +16,14 @@ use crate::dashboard::ui::screen::controller::ScreenController;
 use crate::dashboard::ui::screens::job::job_info_table::JobsTable;
 use crate::dashboard::ui::widgets::tasks_table::TasksTable;
 
+use crate::dashboard::ui::screens::job::job_util_chart::JobHwUtilChart;
 use crate::TakoTaskId;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 #[derive(Default)]
 pub struct JobScreen {
+    worker_util_chart: JobHwUtilChart,
+
     job_info_table: JobsTable,
     job_tasks_table: TasksTable,
 
@@ -42,6 +45,7 @@ impl Screen for JobScreen {
             FocusedComponent::JobTasksTable => (table_style_deselected(), table_style_selected()),
         };
 
+        self.worker_util_chart.draw(layout.chart_chunk, frame);
         self.job_info_table
             .draw(layout.job_info_chunk, frame, tasks_table_style);
         self.job_tasks_table.draw(
@@ -68,6 +72,11 @@ impl Screen for JobScreen {
                 .collect();
             self.job_tasks_table.update(task_infos);
         }
+
+        if let Some((_, worker_id)) = self.job_tasks_table.get_selected_item() {
+            self.worker_util_chart.set_worker_id(worker_id);
+        }
+        self.worker_util_chart.update(data);
     }
 
     /// Handles key presses for the components of the screen
@@ -99,7 +108,7 @@ impl Screen for JobScreen {
  **/
 struct JobScreenLayout {
     header_chunk: Rect,
-    _chart_chunk: Rect,
+    chart_chunk: Rect,
     job_info_chunk: Rect,
     job_tasks_chunk: Rect,
     footer_chunk: Rect,
@@ -125,7 +134,7 @@ impl JobScreenLayout {
 
         Self {
             header_chunk: job_screen_chunks[0],
-            _chart_chunk: job_screen_chunks[1],
+            chart_chunk: job_screen_chunks[1],
             job_info_chunk: component_area[0],
             job_tasks_chunk: component_area[1],
             footer_chunk: job_screen_chunks[3],
